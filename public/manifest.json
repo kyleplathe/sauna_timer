@@ -1,0 +1,19 @@
+{
+  "name": "Ember & Ice — Contrast Therapy Timer",
+  "short_name": "Sauna Timer",
+  "description": "Research-backed sauna and cold therapy timer.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1c100a",
+  "theme_color": "#f97316",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["health", "lifestyle"]
+}

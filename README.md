@@ -22,7 +22,7 @@ npm ci
 npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173).
+Open the lab at [http://localhost:5173](http://localhost:5173) and the timer at [http://localhost:5173/sauna/](http://localhost:5173/sauna/).
 
 ```bash
 npm test
@@ -30,12 +30,15 @@ npm run lint
 npm run build
 ```
 
+`npm run build` writes the lab to `dist/` and the timer to `dist/sauna/` (Vite `base` is `/sauna/`).
+
 ## Deploy to Cloudflare
 
 Production URLs after a successful Workers Builds deploy:
 
-- https://sauna-timer.kyleplathe.workers.dev
-- https://dev.kyleplathe.com
+- Lab home: https://dev.kyleplathe.com
+- Sauna timer: https://dev.kyleplathe.com/sauna/
+- Workers.dev: https://sauna-timer.kyleplathe.workers.dev and `/sauna/`
 
 `dev.kyleplathe.com` is attached as a **Worker route** on the existing proxied DNS record in zone `kyleplathe.com`. Keep the `dev` record **proxied** (orange cloud). Do not use a Worker Custom Domain for this hostname while that A/CNAME exists — Cloudflare error 100117.
 

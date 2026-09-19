@@ -41,7 +41,24 @@ npm run build
 
 The Worker is the site origin (`custom_domain` on `kyleplathe.com`) so `/` can go live without the old host’s broken TLS. Prototypes stay under `/dev`. The splash is a stand-in until the blog is written.
 
-If deploy fails with **100117**, delete the leftover apex **A / AAAA / CNAME** for `kyleplathe.com` (the record still pointing at the old origin), then retry the Worker build. Keep the zone on Cloudflare nameservers. Do not recreate `dev.kyleplathe.com`.
+### DNS (kyleplathe.com zone)
+
+The 525 is this proxied A record pointing at IONOS:
+
+```
+kyleplathe.com.  1  IN  A  74.208.236.165  ; cf-proxied:true
+```
+
+Delete **only that A record**. Cloudflare cannot attach a Worker Custom Domain while it exists (error 100117), and orange-cloud proxy to that IP is the SSL handshake failure.
+
+Keep everything else:
+
+- NS (`kenia` / `tosana`)
+- MX (`mx00.ionos.com` / `mx01.ionos.com`)
+- TXT SPF (`include:_spf-us.ionos.com`)
+- CNAME `autodiscover`, `_dmarc`, `_domainconnect`
+
+Do not add `dev.kyleplathe.com`. After the A record is gone, merge/retry the Worker build. Cloudflare will recreate the apex record for the Worker and issue the certificate.
 
 ### Workers Builds (GitHub App)
 

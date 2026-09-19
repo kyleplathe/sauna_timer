@@ -38,9 +38,24 @@ Production URLs after a successful Workers Builds deploy:
 
 - Lab home: https://dev.kyleplathe.com
 - Sauna timer: https://dev.kyleplathe.com/sauna/
-- Workers.dev: https://sauna-timer.kyleplathe.workers.dev and `/sauna/`
+- Always-on fallback: https://sauna-timer.kyleplathe.workers.dev (and `/sauna/` after this Worker is rebuilt)
 
-`dev.kyleplathe.com` is attached as a **Worker route** on the existing proxied DNS record in zone `kyleplathe.com`. Keep the `dev` record **proxied** (orange cloud). Do not use a Worker Custom Domain for this hostname while that A/CNAME exists — Cloudflare error 100117.
+`dev.kyleplathe.com` must be a **Worker Custom Domain**. Cloudflare then owns DNS and TLS for that hostname. The Worker is the origin, so there is no handshake with IONOS or any other server.
+
+### Fix Cloudflare error 525
+
+`525 SSL handshake failed` means Cloudflare reached `dev` (orange-cloud proxy) and then tried HTTPS to the **old origin** behind that DNS record. That origin has no working certificate. The Worker never saw the request.
+
+Do this in the Cloudflare dashboard, then retry the Worker build:
+
+1. Open [DNS records for kyleplathe.com](https://dash.cloudflare.com/?to=/:account/kyleplathe.com/dns/records).
+2. Delete **every** record whose name is `dev` (A, AAAA, and CNAME). Leave apex `kyleplathe.com` records alone unless you also want to repair the live site.
+3. Workers & Pages → `sauna-timer` → **Retry** the latest build, or merge a commit that deploys with `custom_domain` for `dev.kyleplathe.com`.
+4. Cloudflare will recreate `dev` as a Worker-managed record and issue the certificate.
+
+Do not point `dev` at an IONOS IP, a Pages placeholder, or `workers.dev` as a CNAME. SSL/TLS mode can stay **Full (strict)**.
+
+Apex `https://kyleplathe.com` is a separate 525: it still needs its own origin or its own Worker/Pages project. This repo only serves `dev.kyleplathe.com`.
 
 ### Workers Builds (GitHub App)
 
@@ -55,7 +70,7 @@ Already connected for this repo. Settings that must stay in the dashboard:
 
 If you would rather deploy from GitHub instead of Workers Builds, add repository secrets:
 
-- `CLOUDFLARE_API_TOKEN` — token from [Create API token](https://dash.cloudflare.com/profile/api-tokens) using the **Edit Cloudflare Workers** template (include zone permission to attach routes)
+- `CLOUDFLARE_API_TOKEN` — token from [Create API token](https://dash.cloudflare.com/profile/api-tokens) using the **Edit Cloudflare Workers** template (include zone permission to attach custom domains)
 - `CLOUDFLARE_ACCOUNT_ID` — from the Cloudflare dashboard overview
 
 Then run **Actions → Deploy Worker → Run workflow**. Do not enable both Workers Builds auto-deploy and this Action, or every push will deploy twice.

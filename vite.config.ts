@@ -8,8 +8,9 @@ import { defineConfig } from 'vite'
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url))
 const hubDir = path.join(rootDir, 'hub')
+const homeDir = path.join(rootDir, 'home')
 
-function hubDevServer(): Plugin {
+function staticDirServer(): Plugin {
   const mime: Record<string, string> = {
     '.html': 'text/html; charset=utf-8',
     '.svg': 'image/svg+xml',
@@ -19,29 +20,26 @@ function hubDevServer(): Plugin {
     '.ico': 'image/x-icon',
   }
 
-  const sitePlaceholder = `<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Kyle Plathe</title>
-    <style>
-      body { font-family: Outfit, ui-sans-serif, system-ui, sans-serif; margin: 0; background: #070708; color: #f4f1ea; }
-      main { max-width: 40rem; margin: 20vh auto; padding: 0 1.5rem; }
-      a { color: #c4f542; }
-    </style>
-  </head>
-  <body>
-    <main>
-      <p>kyleplathe.com</p>
-      <h1>Personal site</h1>
-      <p>This URL is reserved for the blog. Prototypes live at <a href="/dev/">/dev</a>.</p>
-    </main>
-  </body>
-</html>`
+  function sendFile(res: {
+    setHeader: (name: string, value: string) => void
+    end: (body: Buffer) => void
+  }, file: string) {
+    res.setHeader(
+      'Content-Type',
+      mime[path.extname(file)] ?? 'application/octet-stream',
+    )
+    res.end(fs.readFileSync(file))
+  }
+
+  function safeFile(dir: string, relative: string) {
+    const file = path.resolve(dir, relative)
+    if (!file.startsWith(dir + path.sep) && file !== dir) return null
+    if (!fs.existsSync(file) || !fs.statSync(file).isFile()) return null
+    return file
+  }
 
   return {
-    name: 'kyleplathe-hub-dev',
+    name: 'kyleplathe-static-dev',
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
         const url = (req.url ?? '/').split('?')[0]
@@ -55,43 +53,35 @@ function hubDevServer(): Plugin {
           return
         }
 
-        if (url === '/' || url === '/index.html') {
-          res.setHeader('Content-Type', 'text/html; charset=utf-8')
-          res.end(sitePlaceholder)
+        if (url === '/dev' || url === '/dev/' || url.startsWith('/dev/')) {
+          const relative =
+            url === '/dev' || url === '/dev/'
+              ? 'index.html'
+              : url.replace(/^\/dev\//, '')
+          const file = safeFile(hubDir, relative)
+          if (!file) {
+            next()
+            return
+          }
+          sendFile(res, file)
           return
         }
 
-        if (url !== '/dev' && url !== '/dev/' && !url.startsWith('/dev/')) {
-          next()
+        const homeRelative = url === '/' ? 'index.html' : url.replace(/^\//, '')
+        const homeFile = safeFile(homeDir, homeRelative)
+        if (homeFile) {
+          sendFile(res, homeFile)
           return
         }
 
-        const relative =
-          url === '/dev' || url === '/dev/'
-            ? 'index.html'
-            : url.replace(/^\/dev\//, '')
-        const file = path.resolve(hubDir, relative)
-        if (!file.startsWith(hubDir + path.sep) && file !== hubDir) {
-          next()
-          return
-        }
-        if (!fs.existsSync(file) || !fs.statSync(file).isFile()) {
-          next()
-          return
-        }
-
-        res.setHeader(
-          'Content-Type',
-          mime[path.extname(file)] ?? 'application/octet-stream',
-        )
-        res.end(fs.readFileSync(file))
+        next()
       })
     },
   }
 }
 
 export default defineConfig({
-  plugins: [react(), tailwindcss(), hubDevServer()],
+  plugins: [react(), tailwindcss(), staticDirServer()],
   base: '/dev/sauna/',
   build: {
     outDir: 'dist/dev/sauna',

@@ -22,7 +22,7 @@ npm ci
 npm run dev
 ```
 
-Open the lab at [http://localhost:5173/dev/](http://localhost:5173/dev/) and the timer at [http://localhost:5173/dev/sauna/](http://localhost:5173/dev/sauna/).
+Open the homepage at [http://localhost:5173](http://localhost:5173), the lab at [http://localhost:5173/dev/](http://localhost:5173/dev/), and the timer at [http://localhost:5173/dev/sauna/](http://localhost:5173/dev/sauna/).
 
 ```bash
 npm test
@@ -30,19 +30,18 @@ npm run lint
 npm run build
 ```
 
-`npm run build` writes the lab to `dist/dev/` and the timer to `dist/dev/sauna/` (Vite `base` is `/dev/sauna/`).
+`npm run build` writes the splash to `dist/`, the lab to `dist/dev/`, and the timer to `dist/dev/sauna/`.
 
 ## Deploy to Cloudflare
 
-This Worker only serves **`/dev`**. The apex `https://kyleplathe.com` stays free for the personal blog.
-
+- Home: https://kyleplathe.com
 - Lab: https://kyleplathe.com/dev/
 - Timer: https://kyleplathe.com/dev/sauna/
-- Fallback: https://sauna-timer.kyleplathe.workers.dev/dev/
+- Fallback: https://sauna-timer.kyleplathe.workers.dev
 
-Routes in `wrangler.jsonc` are `kyleplathe.com/dev` and `kyleplathe.com/dev/*`. There is no `dev.kyleplathe.com` subdomain. Keep the apex DNS record **proxied** (orange cloud) so those path routes can run.
+The Worker is the site origin (`custom_domain` on `kyleplathe.com`) so `/` can go live without the old host’s broken TLS. Prototypes stay under `/dev`. The splash is a stand-in until the blog is written.
 
-`kyleplathe.com/` will keep returning **525** until the blog has its own origin (Pages, another Worker, or a host with valid HTTPS). That is separate from this repo.
+If deploy fails with **100117**, delete the leftover apex **A / AAAA / CNAME** for `kyleplathe.com` (the record still pointing at the old origin), then retry the Worker build. Keep the zone on Cloudflare nameservers. Do not recreate `dev.kyleplathe.com`.
 
 ### Workers Builds (GitHub App)
 

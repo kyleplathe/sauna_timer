@@ -4,7 +4,6 @@ import {
   readdirSync,
   rmSync,
   statSync,
-  writeFileSync,
 } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -12,6 +11,7 @@ import { fileURLToPath } from 'node:url'
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const dist = join(root, 'dist')
 const hub = join(root, 'hub')
+const home = join(root, 'home')
 const sauna = join(dist, 'dev', 'sauna')
 
 if (!statSync(sauna).isDirectory()) {
@@ -32,24 +32,7 @@ for (const name of readdirSync(join(dist, 'dev'))) {
   rmSync(join(dist, 'dev', name), { recursive: true, force: true })
 }
 
+cpSync(home, dist, { recursive: true })
 cpSync(hub, join(dist, 'dev'), { recursive: true })
 
-writeFileSync(
-  join(dist, 'index.html'),
-  `<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="refresh" content="0; url=/dev/" />
-    <link rel="canonical" href="/dev/" />
-    <title>Redirecting to /dev</title>
-    <script>location.replace('/dev/')</script>
-  </head>
-  <body>
-    <p><a href="/dev/">Prototypes live at /dev</a></p>
-  </body>
-</html>
-`,
-)
-
-console.log('Assembled hub at dist/dev/ and timer at dist/dev/sauna/')
+console.log('Assembled home at dist/, hub at dist/dev/, timer at dist/dev/sauna/')

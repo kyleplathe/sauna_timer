@@ -220,6 +220,52 @@
         color: #d6d3d1;
       }
 
+      .pill.shipped {
+        color: var(--lime);
+        border-color: color-mix(in srgb, var(--lime) 40%, var(--line));
+      }
+
+      .shipped {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.25rem;
+      }
+
+      .app-icon {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.7rem;
+        width: 6.5rem;
+        color: var(--text);
+      }
+
+      .app-icon img {
+        width: 5.5rem;
+        height: 5.5rem;
+        border-radius: 22.5%;
+        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+        background: #111;
+      }
+
+      .app-icon:hover img {
+        transform: translateY(-2px);
+        box-shadow: 0 14px 32px rgba(0, 0, 0, 0.45);
+      }
+
+      .app-icon img {
+        transition:
+          transform 160ms ease,
+          box-shadow 160ms ease;
+      }
+
+      .app-icon span {
+        font-size: 0.82rem;
+        font-weight: 500;
+        text-align: center;
+        line-height: 1.25;
+      }
+
       .card h3 {
         font-family: Fraunces, Georgia, serif;
         font-size: 1.85rem;
@@ -289,6 +335,26 @@
       </p>
 
       <section>
+        <h2>Shipped</h2>
+        <div class="shipped">
+          <a
+            class="app-icon"
+            href="https://apps.apple.com/us/app/bills-balance/id6755087891"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <img
+              src="/dev/bills-balance-icon.jpg"
+              alt=""
+              width="88"
+              height="88"
+            />
+            <span>Bills &amp; Balance</span>
+          </a>
+        </div>
+      </section>
+
+      <section>
         <h2>On /dev</h2>
         <div class="featured">
           <a class="card ember" href="/dev/sauna/">
@@ -322,14 +388,6 @@
       <section>
         <h2>Also building</h2>
         <div class="grid">
-          <a class="card" href="https://github.com/kyleplathe/bills-balance">
-            <div class="card-top">
-              <span class="pill github">GitHub</span>
-              <span class="cta">Repo</span>
-            </div>
-            <h3>Bills Balance</h3>
-            <p>iOS app for tracking bills and balance.</p>
-          </a>
           <a class="card" href="https://github.com/kyleplathe/thrasher-lockscreen">
             <div class="card-top">
               <span class="pill github">GitHub</span>

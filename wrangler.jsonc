@@ -13,8 +13,12 @@
   },
   "routes": [
     {
-      "pattern": "dev.kyleplathe.com",
-      "custom_domain": true,
+      "pattern": "kyleplathe.com/dev",
+      "zone_name": "kyleplathe.com",
+    },
+    {
+      "pattern": "kyleplathe.com/dev/*",
+      "zone_name": "kyleplathe.com",
     },
   ],
 }

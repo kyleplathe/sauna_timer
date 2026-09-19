@@ -19,13 +19,34 @@ function hubDevServer(): Plugin {
     '.ico': 'image/x-icon',
   }
 
+  const sitePlaceholder = `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kyle Plathe</title>
+    <style>
+      body { font-family: Outfit, ui-sans-serif, system-ui, sans-serif; margin: 0; background: #070708; color: #f4f1ea; }
+      main { max-width: 40rem; margin: 20vh auto; padding: 0 1.5rem; }
+      a { color: #c4f542; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p>kyleplathe.com</p>
+      <h1>Personal site</h1>
+      <p>This URL is reserved for the blog. Prototypes live at <a href="/dev/">/dev</a>.</p>
+    </main>
+  </body>
+</html>`
+
   return {
     name: 'kyleplathe-hub-dev',
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
         const url = (req.url ?? '/').split('?')[0]
         if (
-          url.startsWith('/sauna') ||
+          url.startsWith('/dev/sauna') ||
           url.startsWith('/@') ||
           url.startsWith('/src') ||
           url.startsWith('/node_modules')
@@ -34,7 +55,21 @@ function hubDevServer(): Plugin {
           return
         }
 
-        const relative = url === '/' ? 'index.html' : url.replace(/^\//, '')
+        if (url === '/' || url === '/index.html') {
+          res.setHeader('Content-Type', 'text/html; charset=utf-8')
+          res.end(sitePlaceholder)
+          return
+        }
+
+        if (url !== '/dev' && url !== '/dev/' && !url.startsWith('/dev/')) {
+          next()
+          return
+        }
+
+        const relative =
+          url === '/dev' || url === '/dev/'
+            ? 'index.html'
+            : url.replace(/^\/dev\//, '')
         const file = path.resolve(hubDir, relative)
         if (!file.startsWith(hubDir + path.sep) && file !== hubDir) {
           next()
@@ -57,9 +92,9 @@ function hubDevServer(): Plugin {
 
 export default defineConfig({
   plugins: [react(), tailwindcss(), hubDevServer()],
-  base: '/sauna/',
+  base: '/dev/sauna/',
   build: {
-    outDir: 'dist/sauna',
+    outDir: 'dist/dev/sauna',
     emptyOutDir: true,
   },
   server: {

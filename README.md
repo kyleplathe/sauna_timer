@@ -58,7 +58,7 @@ If you would rather deploy from GitHub instead of Workers Builds, add repository
 - `CLOUDFLARE_API_TOKEN` — token from [Create API token](https://dash.cloudflare.com/profile/api-tokens) using the **Edit Cloudflare Workers** template (include zone permission to attach custom domains)
 - `CLOUDFLARE_ACCOUNT_ID` — from the Cloudflare dashboard overview
 
-Then run **Actions → Deploy Worker → Run workflow**, or merge to `main`. Do not enable both Workers Builds auto-deploy and this Action on the same branch, or every push will deploy twice.
+Then run **Actions → Deploy Worker → Run workflow**. Do not enable both Workers Builds auto-deploy and this Action, or every push will deploy twice.
 
 ## Hands-free flow
 

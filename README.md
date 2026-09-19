@@ -22,7 +22,7 @@ npm ci
 npm run dev
 ```
 
-Open the lab at [http://localhost:5173](http://localhost:5173) and the timer at [http://localhost:5173/sauna/](http://localhost:5173/sauna/).
+Open the homepage at [http://localhost:5173](http://localhost:5173), the lab at [http://localhost:5173/dev/](http://localhost:5173/dev/), and the timer at [http://localhost:5173/dev/sauna/](http://localhost:5173/dev/sauna/).
 
 ```bash
 npm test
@@ -30,32 +30,18 @@ npm run lint
 npm run build
 ```
 
-`npm run build` writes the lab to `dist/` and the timer to `dist/sauna/` (Vite `base` is `/sauna/`).
+`npm run build` writes the splash to `dist/`, the lab to `dist/dev/`, and the timer to `dist/dev/sauna/`.
 
 ## Deploy to Cloudflare
 
-Production URLs after a successful Workers Builds deploy:
+- Home: https://kyleplathe.com
+- Lab: https://kyleplathe.com/dev/
+- Timer: https://kyleplathe.com/dev/sauna/
+- Fallback: https://sauna-timer.kyleplathe.workers.dev
 
-- Lab home: https://dev.kyleplathe.com
-- Sauna timer: https://dev.kyleplathe.com/sauna/
-- Always-on fallback: https://sauna-timer.kyleplathe.workers.dev (and `/sauna/` after this Worker is rebuilt)
+The Worker is the site origin (`custom_domain` on `kyleplathe.com`) so `/` can go live without the old host’s broken TLS. Prototypes stay under `/dev`. The splash is a stand-in until the blog is written.
 
-`dev.kyleplathe.com` must be a **Worker Custom Domain**. Cloudflare then owns DNS and TLS for that hostname. The Worker is the origin, so there is no handshake with IONOS or any other server.
-
-### Fix Cloudflare error 525
-
-`525 SSL handshake failed` means Cloudflare reached `dev` (orange-cloud proxy) and then tried HTTPS to the **old origin** behind that DNS record. That origin has no working certificate. The Worker never saw the request.
-
-Do this in the Cloudflare dashboard, then retry the Worker build:
-
-1. Open [DNS records for kyleplathe.com](https://dash.cloudflare.com/?to=/:account/kyleplathe.com/dns/records).
-2. Delete **every** record whose name is `dev` (A, AAAA, and CNAME). Leave apex `kyleplathe.com` records alone unless you also want to repair the live site.
-3. Workers & Pages → `sauna-timer` → **Retry** the latest build, or merge a commit that deploys with `custom_domain` for `dev.kyleplathe.com`.
-4. Cloudflare will recreate `dev` as a Worker-managed record and issue the certificate.
-
-Do not point `dev` at an IONOS IP, a Pages placeholder, or `workers.dev` as a CNAME. SSL/TLS mode can stay **Full (strict)**.
-
-Apex `https://kyleplathe.com` is a separate 525: it still needs its own origin or its own Worker/Pages project. This repo only serves `dev.kyleplathe.com`.
+If deploy fails with **100117**, delete the leftover apex **A / AAAA / CNAME** for `kyleplathe.com` (the record still pointing at the old origin), then retry the Worker build. Keep the zone on Cloudflare nameservers. Do not recreate `dev.kyleplathe.com`.
 
 ### Workers Builds (GitHub App)
 
@@ -66,11 +52,13 @@ Already connected for this repo. Settings that must stay in the dashboard:
 - **Build command:** `npm run build`
 - **Deploy command:** `npx wrangler deploy`
 
+After deploy, in the Worker → Settings → Domains & Routes, remove any leftover **Custom Domain** on `dev.kyleplathe.com` if Cloudflare still shows one.
+
 ### Backup: GitHub Actions
 
 If you would rather deploy from GitHub instead of Workers Builds, add repository secrets:
 
-- `CLOUDFLARE_API_TOKEN` — token from [Create API token](https://dash.cloudflare.com/profile/api-tokens) using the **Edit Cloudflare Workers** template (include zone permission to attach custom domains)
+- `CLOUDFLARE_API_TOKEN` — token from [Create API token](https://dash.cloudflare.com/profile/api-tokens) using the **Edit Cloudflare Workers** template (include zone permission to attach routes)
 - `CLOUDFLARE_ACCOUNT_ID` — from the Cloudflare dashboard overview
 
 Then run **Actions → Deploy Worker → Run workflow**. Do not enable both Workers Builds auto-deploy and this Action, or every push will deploy twice.

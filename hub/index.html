@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#070708" />
+    <meta
+      name="description"
+      content="Kyle Plathe’s lab — prototypes on this host, live sites, and work still on GitHub."
+    />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650&family=Outfit:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <title>Kyle Plathe — Dev</title>
+    <style>
+      :root {
+        --bg: #070708;
+        --bg-elev: #121214;
+        --line: #26262b;
+        --text: #f4f1ea;
+        --muted: #a8a29e;
+        --lime: #c4f542;
+        --ember: #f97316;
+        --ice: #22d3ee;
+        --live: #34d399;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background: var(--bg);
+        color: var(--text);
+        font-family: Outfit, ui-sans-serif, system-ui, sans-serif;
+      }
+
+      body {
+        background-image:
+          radial-gradient(1200px 500px at 10% -10%, rgba(196, 245, 66, 0.08), transparent 50%),
+          radial-gradient(900px 400px at 90% 0%, rgba(34, 211, 238, 0.06), transparent 45%),
+          linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        background-size:
+          auto,
+          auto,
+          48px 48px,
+          48px 48px;
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      .wrap {
+        width: min(1080px, calc(100% - 2rem));
+        margin: 0 auto;
+        padding: 2.5rem 0 4.5rem;
+      }
+
+      header {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 3.5rem;
+      }
+
+      .mark {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        letter-spacing: 0.28em;
+        text-transform: uppercase;
+        font-size: 0.72rem;
+        color: var(--muted);
+      }
+
+      .mark-grid {
+        width: 18px;
+        height: 18px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 3px;
+      }
+
+      .mark-grid span {
+        border-radius: 2px;
+        background: var(--line);
+      }
+
+      .mark-grid span:first-child {
+        background: var(--lime);
+      }
+
+      .mark-grid span:last-child {
+        background: var(--text);
+      }
+
+      .site-link {
+        font-size: 0.9rem;
+        color: var(--muted);
+        border-bottom: 1px solid transparent;
+      }
+
+      .site-link:hover {
+        color: var(--text);
+        border-bottom-color: var(--lime);
+      }
+
+      h1 {
+        font-family: Fraunces, Georgia, serif;
+        font-size: clamp(2.6rem, 7vw, 5.2rem);
+        font-weight: 500;
+        line-height: 0.95;
+        letter-spacing: -0.03em;
+        margin: 0 0 1rem;
+        max-width: 12ch;
+      }
+
+      .lede {
+        max-width: 38rem;
+        font-size: 1.15rem;
+        line-height: 1.55;
+        color: var(--muted);
+        margin: 0 0 3.25rem;
+      }
+
+      h2 {
+        font-size: 0.72rem;
+        letter-spacing: 0.28em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 0 0 1rem;
+      }
+
+      section + section {
+        margin-top: 2.75rem;
+      }
+
+      .featured {
+        display: grid;
+        gap: 1rem;
+      }
+
+      .card {
+        display: grid;
+        gap: 0.85rem;
+        padding: 1.4rem 1.5rem;
+        background: var(--bg-elev);
+        border: 1px solid var(--line);
+        border-radius: 1.25rem;
+        transition:
+          transform 160ms ease,
+          border-color 160ms ease;
+      }
+
+      a.card:hover {
+        transform: translateY(-2px);
+        border-color: color-mix(in srgb, var(--lime) 45%, var(--line));
+      }
+
+      .card.ember {
+        background:
+          linear-gradient(135deg, rgba(249, 115, 22, 0.16), rgba(34, 211, 238, 0.08) 55%, var(--bg-elev)),
+          var(--bg-elev);
+      }
+
+      .card-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        border-radius: 999px;
+        padding: 0.2rem 0.65rem;
+        font-size: 0.72rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        border: 1px solid var(--line);
+        color: var(--muted);
+      }
+
+      .pill::before {
+        content: "";
+        width: 0.45rem;
+        height: 0.45rem;
+        border-radius: 999px;
+        background: currentColor;
+      }
+
+      .pill.prototype {
+        color: var(--ember);
+        border-color: color-mix(in srgb, var(--ember) 40%, var(--line));
+      }
+
+      .pill.live {
+        color: var(--live);
+        border-color: color-mix(in srgb, var(--live) 40%, var(--line));
+      }
+
+      .pill.github {
+        color: #d6d3d1;
+      }
+
+      .card h3 {
+        font-family: Fraunces, Georgia, serif;
+        font-size: 1.85rem;
+        font-weight: 500;
+        margin: 0;
+      }
+
+      .card p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      .cta {
+        color: var(--lime);
+        font-size: 0.92rem;
+        font-weight: 600;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1rem;
+      }
+
+      .grid h3 {
+        font-size: 1.2rem;
+        font-family: Outfit, sans-serif;
+        font-weight: 600;
+      }
+
+      footer {
+        margin-top: 4rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 0.88rem;
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+
+      footer a:hover {
+        color: var(--text);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <div class="mark">
+          <div class="mark-grid" aria-hidden="true">
+            <span></span><span></span><span></span><span></span>
+          </div>
+          Kyle Plathe · Dev
+        </div>
+        <a class="site-link" href="https://kyleplathe.com">kyleplathe.com</a>
+      </header>
+
+      <h1>Work in public.</h1>
+      <p class="lede">
+        This host is the front door for prototypes and live projects. Each app
+        gets its own path. GitHub stays the source; this page is the index.
+      </p>
+
+      <section>
+        <h2>On this host</h2>
+        <div class="featured">
+          <a class="card ember" href="/sauna/">
+            <div class="card-top">
+              <span class="pill prototype">Prototype</span>
+              <span class="cta">/sauna</span>
+            </div>
+            <h3>Ember &amp; Ice</h3>
+            <p>
+              Contrast therapy timer for sauna plus cold shower or plunge.
+              Hands-free walk timers, session history, and Apple Health export.
+            </p>
+          </a>
+        </div>
+      </section>
+
+      <section>
+        <h2>Live</h2>
+        <div class="grid">
+          <a class="card" href="https://kyleplathe.com">
+            <div class="card-top">
+              <span class="pill live">Live</span>
+              <span class="cta">Open</span>
+            </div>
+            <h3>kyleplathe.com</h3>
+            <p>Personal site and public home on the apex domain.</p>
+          </a>
+        </div>
+      </section>
+
+      <section>
+        <h2>Also building</h2>
+        <div class="grid">
+          <a class="card" href="https://github.com/kyleplathe/bills-balance">
+            <div class="card-top">
+              <span class="pill github">GitHub</span>
+              <span class="cta">Repo</span>
+            </div>
+            <h3>Bills Balance</h3>
+            <p>iOS app for tracking bills and balance.</p>
+          </a>
+          <a class="card" href="https://github.com/kyleplathe/thrasher-lockscreen">
+            <div class="card-top">
+              <span class="pill github">GitHub</span>
+              <span class="cta">Repo</span>
+            </div>
+            <h3>Thrasher Lockscreen</h3>
+            <p>Magazine covers as daily iPhone lock screens via Shortcuts.</p>
+          </a>
+          <a class="card" href="https://github.com/kyleplathe/stronghold-lockandkey">
+            <div class="card-top">
+              <span class="pill github">GitHub</span>
+              <span class="cta">Repo</span>
+            </div>
+            <h3>Stronghold Lock &amp; Key</h3>
+            <p>Landing page for a local locksmith.</p>
+          </a>
+          <a class="card" href="https://github.com/kyleplathe/apple-photo-audit">
+            <div class="card-top">
+              <span class="pill github">GitHub</span>
+              <span class="cta">Repo</span>
+            </div>
+            <h3>Apple Photo Audit</h3>
+            <p>Tools for reviewing and cleaning up a photo library.</p>
+          </a>
+          <a class="card" href="https://github.com/kyleplathe/meal_planner_agent">
+            <div class="card-top">
+              <span class="pill github">GitHub</span>
+              <span class="cta">Repo</span>
+            </div>
+            <h3>Meal Planner Agent</h3>
+            <p>Agent project for planning meals.</p>
+          </a>
+          <a class="card" href="https://github.com/kyleplathe/TechNewsAgent">
+            <div class="card-top">
+              <span class="pill github">GitHub</span>
+              <span class="cta">Repo</span>
+            </div>
+            <h3>Tech News Agent</h3>
+            <p>Agent project for following technology news.</p>
+          </a>
+          <a class="card" href="https://github.com/kyleplathe/instakyle-site">
+            <div class="card-top">
+              <span class="pill github">GitHub</span>
+              <span class="cta">Repo</span>
+            </div>
+            <h3>Instakyle</h3>
+            <p>Personal site experiment on GitHub.</p>
+          </a>
+        </div>
+      </section>
+
+      <footer>
+        <span>Add the next prototype as another path on this host.</span>
+        <a href="https://github.com/kyleplathe">github.com/kyleplathe</a>
+      </footer>
+    </div>
+  </body>
+</html>

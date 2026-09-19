@@ -184,6 +184,14 @@ function App() {
               <h1 className="font-display text-3xl">Sauna Timer</h1>
             </button>
             <div className="flex items-center gap-2">
+              {import.meta.env.BASE_URL.startsWith('/sauna') ? (
+                <a
+                  href="/"
+                  className="rounded-full bg-stone-200 px-3 py-2 text-sm dark:bg-stone-800"
+                >
+                  Lab
+                </a>
+              ) : null}
               <button
                 onClick={() => updateSettings({ darkMode: !settings.darkMode })}
                 className="rounded-full bg-stone-200 px-3 py-2 text-sm dark:bg-stone-800"

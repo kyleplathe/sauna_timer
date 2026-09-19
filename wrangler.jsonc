@@ -3,6 +3,7 @@
   "name": "sauna-timer",
   "compatibility_date": "2026-09-19",
   "workers_dev": true,
+  "preview_urls": true,
   "observability": {
     "enabled": true,
   },
@@ -12,8 +13,8 @@
   },
   "routes": [
     {
-      "pattern": "dev.kyleplathe.com",
-      "custom_domain": true,
+      "pattern": "dev.kyleplathe.com/*",
+      "zone_name": "kyleplathe.com",
     },
   ],
 }

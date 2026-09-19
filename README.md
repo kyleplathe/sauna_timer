@@ -22,7 +22,7 @@ npm ci
 npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173).
+Open the lab at [http://localhost:5173](http://localhost:5173) and the timer at [http://localhost:5173/sauna/](http://localhost:5173/sauna/).
 
 ```bash
 npm test
@@ -30,32 +30,32 @@ npm run lint
 npm run build
 ```
 
+`npm run build` writes the lab to `dist/` and the timer to `dist/sauna/` (Vite `base` is `/sauna/`).
+
 ## Deploy to Cloudflare
 
-This repo is ready for a Workers static-asset deploy at **https://dev.kyleplathe.com** (plus a `*.workers.dev` URL). Cloudflare has to authorize GitHub itself — that OAuth step cannot be completed from this agent.
+Production URLs after a successful Workers Builds deploy:
 
-### Preferred: Workers Builds (GitHub App)
+- Lab home: https://dev.kyleplathe.com
+- Sauna timer: https://dev.kyleplathe.com/sauna/
+- Workers.dev: https://sauna-timer.kyleplathe.workers.dev and `/sauna/`
 
-1. Merge this change to `main`.
-2. In the Cloudflare dashboard, open [Workers & Pages](https://dash.cloudflare.com/?to=/:account/workers-and-pages) → **Create** → **Import a repository**.
-3. Authorize the **Cloudflare Workers & Pages** GitHub App for `kyleplathe/sauna_timer`.
-4. Import `kyleplathe/sauna_timer`. The Worker **name must be** `sauna-timer` (it has to match `wrangler.jsonc`).
-5. Production branch: `main`.
-6. **Build command:** `npm run build`
-7. **Deploy command:** `npx wrangler deploy`
-8. Save and deploy.
+`dev.kyleplathe.com` is attached as a **Worker route** on the existing proxied DNS record in zone `kyleplathe.com`. Keep the `dev` record **proxied** (orange cloud). Do not use a Worker Custom Domain for this hostname while that A/CNAME exists — Cloudflare error 100117.
 
-The first successful deploy attaches the custom domain from `wrangler.jsonc`. If `dev` already has a DNS record, delete that A/CNAME in the zone first so Cloudflare can create the Worker Custom Domain.
+### Workers Builds (GitHub App)
 
-You can also start from Cloudflare’s import button:
+Already connected for this repo. Settings that must stay in the dashboard:
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/kyleplathe/sauna_timer)
+- Worker name: `sauna-timer`
+- Production branch: `main`
+- **Build command:** `npm run build`
+- **Deploy command:** `npx wrangler deploy`
 
 ### Backup: GitHub Actions
 
 If you would rather deploy from GitHub instead of Workers Builds, add repository secrets:
 
-- `CLOUDFLARE_API_TOKEN` — token from [Create API token](https://dash.cloudflare.com/profile/api-tokens) using the **Edit Cloudflare Workers** template (include zone permission to attach custom domains)
+- `CLOUDFLARE_API_TOKEN` — token from [Create API token](https://dash.cloudflare.com/profile/api-tokens) using the **Edit Cloudflare Workers** template (include zone permission to attach routes)
 - `CLOUDFLARE_ACCOUNT_ID` — from the Cloudflare dashboard overview
 
 Then run **Actions → Deploy Worker → Run workflow**. Do not enable both Workers Builds auto-deploy and this Action, or every push will deploy twice.

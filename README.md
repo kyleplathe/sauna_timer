@@ -13,6 +13,7 @@ Heat first. Cold second. End on cold. Hands-free walk timers so you do not have 
 - Hands-free mode: alarm at phase end, short walk countdown, auto-start next phase
 - Voice cues and countdown beeps that **duck** background music when the browser allows (instead of stopping it)
 - Live activity pill (Dynamic Island–style) plus screen wake lock and Now Playing metadata while a session runs
+- Square social share card of your stats (save as photo or share via the system sheet)
 - Session history, streaks, and CSV export for Apple Health import tools
 - Protocol guide and safety notes
 - Installable PWA, dark mode, large type you can read from across the room

@@ -91,3 +91,22 @@ export function CloseIcon(props: IconProps) {
     </svg>
   )
 }
+
+export function ShareIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" {...base} {...props}>
+      <circle cx="18" cy="5" r="2.4" />
+      <circle cx="6" cy="12" r="2.4" />
+      <circle cx="18" cy="19" r="2.4" />
+      <path d="M8.2 10.8 15.8 6.4M8.2 13.2l7.6 4.4" />
+    </svg>
+  )
+}
+
+export function DownloadIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" {...base} {...props}>
+      <path d="M12 4v11M8 11l4 4 4-4M5 19h14" />
+    </svg>
+  )
+}

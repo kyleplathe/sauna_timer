@@ -1,16 +1,21 @@
-import { useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 import type { AudioSettings, PhaseType } from '../types/timer'
 import {
   announceCompletion,
   announcePhaseChange,
   announceTransition,
   announceWarning,
+  setDuckMusicEnabled,
 } from '../utils/audio'
 
 export function useAudio(
   audioSettings: AudioSettings,
   coldType: 'plunge' | 'shower',
 ) {
+  useEffect(() => {
+    setDuckMusicEnabled(audioSettings.duckMusic !== false)
+  }, [audioSettings.duckMusic])
+
   const playPhaseChangeSound = useCallback(
     (phaseType: PhaseType) => {
       if (!audioSettings.enabled) return

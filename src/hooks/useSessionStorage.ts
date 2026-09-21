@@ -11,6 +11,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     voiceGuidance: true,
     warnings: true,
     volume: 0.7,
+    duckMusic: true,
   },
   darkMode: true,
   handsFreeModeEnabled: true,
@@ -18,6 +19,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   preferredColdType: 'shower',
   temperatureUnit: 'F',
   disclaimerAccepted: false,
+  practiceDismissed: false,
 }
 
 function readJson<T>(key: string, fallback: T): T {

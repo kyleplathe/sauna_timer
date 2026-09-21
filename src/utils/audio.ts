@@ -1,6 +1,13 @@
 import type { PhaseType } from '../types/timer'
+import { prepareCueAudio, releaseCueAudio } from './audioSession'
 
 let audioContext: AudioContext | null = null
+let releaseCueTimer: ReturnType<typeof setTimeout> | null = null
+let duckMusicEnabled = true
+
+export function setDuckMusicEnabled(enabled: boolean): void {
+  duckMusicEnabled = enabled
+}
 
 function getAudioContext(): AudioContext {
   if (!audioContext) {
@@ -9,22 +16,40 @@ function getAudioContext(): AudioContext {
   return audioContext
 }
 
+function scheduleCueRelease(holdMs: number): void {
+  if (releaseCueTimer) clearTimeout(releaseCueTimer)
+  releaseCueTimer = setTimeout(() => {
+    releaseCueAudio()
+    releaseCueTimer = null
+  }, holdMs)
+}
+
+/** Prefer ducking background music for short timer cues — never exclusive playback. */
+function withDuckedCue(durationMs: number, play: () => void): void {
+  prepareCueAudio(duckMusicEnabled ? 'transient' : 'ambient')
+  play()
+  scheduleCueRelease(Math.max(250, durationMs + 120))
+}
+
 export function playBeep(
   frequency = 800,
   duration = 0.2,
   volume = 0.3,
 ): void {
-  const ctx = getAudioContext()
-  const oscillator = ctx.createOscillator()
-  const gainNode = ctx.createGain()
-  oscillator.connect(gainNode)
-  gainNode.connect(ctx.destination)
-  oscillator.frequency.value = frequency
-  oscillator.type = 'sine'
-  gainNode.gain.setValueAtTime(Math.max(0.001, volume), ctx.currentTime)
-  gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration)
-  oscillator.start(ctx.currentTime)
-  oscillator.stop(ctx.currentTime + duration)
+  withDuckedCue(duration * 1000, () => {
+    const ctx = getAudioContext()
+    void ctx.resume()
+    const oscillator = ctx.createOscillator()
+    const gainNode = ctx.createGain()
+    oscillator.connect(gainNode)
+    gainNode.connect(ctx.destination)
+    oscillator.frequency.value = frequency
+    oscillator.type = 'sine'
+    gainNode.gain.setValueAtTime(Math.max(0.001, volume), ctx.currentTime)
+    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration)
+    oscillator.start(ctx.currentTime)
+    oscillator.stop(ctx.currentTime + duration)
+  })
 }
 
 export function playChime(volume = 0.3): void {
@@ -54,11 +79,17 @@ export function playCompletionSound(volume = 0.3): void {
 
 export function speak(text: string, volume = 1): void {
   if (!('speechSynthesis' in window)) return
+  // Prefer ducking music under voice cues instead of pausing Spotify/Apple Music.
+  prepareCueAudio(duckMusicEnabled ? 'transient' : 'ambient')
   const utterance = new SpeechSynthesisUtterance(text)
   utterance.volume = volume
   utterance.rate = 1
   utterance.pitch = 1
+  const holdMs = Math.min(12_000, Math.max(2_000, text.length * 80))
+  utterance.onend = () => scheduleCueRelease(80)
+  utterance.onerror = () => scheduleCueRelease(80)
   window.speechSynthesis.speak(utterance)
+  scheduleCueRelease(holdMs)
 }
 
 export function getPhaseAnnouncement(

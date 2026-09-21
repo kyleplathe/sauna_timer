@@ -1,12 +1,14 @@
 import { motion } from 'framer-motion'
 import type { Program } from '../../types/timer'
 import { formatDuration, getTotalDuration } from '../../utils/protocols'
+import { CloseIcon } from '../Icons'
 
 interface PresetSelectorProps {
   programs: Program[]
   onSelect: (program: Program) => void
   onEdit?: (program: Program) => void
   onDelete?: (programId: string) => void
+  onDismissPractice?: () => void
 }
 
 function tone(program: Program): string {
@@ -23,6 +25,7 @@ export function PresetSelector({
   onSelect,
   onEdit,
   onDelete,
+  onDismissPractice,
 }: PresetSelectorProps) {
   return (
     <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-2">
@@ -32,8 +35,21 @@ export function PresetSelector({
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: index * 0.04 }}
-          className="overflow-hidden rounded-3xl shadow-lg"
+          className="relative overflow-hidden rounded-3xl shadow-lg"
         >
+          {program.id === 'practice' && onDismissPractice && (
+            <button
+              type="button"
+              aria-label="Dismiss dry run demo"
+              onClick={(event) => {
+                event.stopPropagation()
+                onDismissPractice()
+              }}
+              className="absolute top-3 right-3 z-10 rounded-full bg-black/25 p-2 text-white backdrop-blur-sm transition hover:bg-black/40"
+            >
+              <CloseIcon className="h-4 w-4" />
+            </button>
+          )}
           <button
             onClick={() => onSelect(program)}
             className={`w-full bg-gradient-to-br ${tone(program)} p-6 text-left text-white`}
@@ -41,7 +57,11 @@ export function PresetSelector({
             <div className="mb-3 flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs tracking-[0.2em] uppercase opacity-80">
-                  {program.coldType === 'shower' ? 'Cold shower' : 'Cold plunge'}
+                  {program.id === 'practice'
+                    ? 'Demo'
+                    : program.coldType === 'shower'
+                      ? 'Cold shower'
+                      : 'Cold plunge'}
                   {program.isPreset ? '' : ' · Custom'}
                 </p>
                 <h3 className="font-display mt-1 text-3xl">{program.name}</h3>

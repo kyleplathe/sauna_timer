@@ -47,6 +47,8 @@ export interface AudioSettings {
   voiceGuidance: boolean
   warnings: boolean
   volume: number
+  /** Duck background music for cues instead of stopping it (when the browser allows). */
+  duckMusic: boolean
 }
 
 export interface AppSettings {
@@ -57,4 +59,6 @@ export interface AppSettings {
   preferredColdType: ColdType
   temperatureUnit: 'C' | 'F'
   disclaimerAccepted: boolean
+  /** Hide the Dry run demo protocol card until restored from Settings. */
+  practiceDismissed: boolean
 }

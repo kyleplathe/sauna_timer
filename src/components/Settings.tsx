@@ -40,6 +40,18 @@ export function Settings({ settings, onUpdate }: SettingsProps) {
             onUpdate({ audio: { ...settings.audio, warnings } })
           }
         />
+        <Toggle
+          label="Duck music during cues"
+          checked={settings.audio.duckMusic !== false}
+          disabled={!settings.audio.enabled}
+          onChange={(duckMusic) =>
+            onUpdate({ audio: { ...settings.audio, duckMusic } })
+          }
+        />
+        <p className="text-sm text-stone-500">
+          Lowers (does not stop) background music while beeps and voice cues play,
+          when the browser supports it.
+        </p>
         <label className="block">
           <span className="mb-2 block text-sm text-stone-500">
             Volume {Math.round(settings.audio.volume * 100)}%
@@ -128,6 +140,15 @@ export function Settings({ settings, onUpdate }: SettingsProps) {
             °F
           </button>
         </div>
+        {settings.practiceDismissed && (
+          <button
+            type="button"
+            onClick={() => onUpdate({ practiceDismissed: false })}
+            className="w-full rounded-xl bg-emerald-700 py-3 text-white"
+          >
+            Restore Dry run demo card
+          </button>
+        )}
       </section>
     </motion.div>
   )

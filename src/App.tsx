@@ -6,6 +6,7 @@ import { ProtocolGuide } from './components/Education/ProtocolGuide'
 import { SafetyTips } from './components/Education/SafetyTips'
 import { SessionHistory } from './components/Session/SessionHistory'
 import { SessionStats } from './components/Session/SessionStats'
+import { ShareStatsCard } from './components/Session/ShareStatsCard'
 import { Settings } from './components/Settings'
 import { LiveActivityIsland } from './components/Timer/LiveActivityIsland'
 import { TimerDisplay } from './components/Timer/TimerDisplay'
@@ -337,6 +338,7 @@ function App() {
             className="mx-auto max-w-6xl py-8"
           >
             <SessionStats stats={stats} />
+            <ShareStatsCard stats={stats} />
             <SessionHistory
               sessions={sessions}
               onDelete={deleteSession}

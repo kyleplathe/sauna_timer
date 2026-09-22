@@ -1,0 +1,21 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "kyle-plathe",
+  "compatibility_date": "2026-09-22",
+  "workers_dev": true,
+  "preview_urls": true,
+  "observability": {
+    "enabled": true
+  },
+  "assets": {
+    "directory": "./public",
+    "not_found_handling": "404-page"
+  },
+  // Claims the apex. Deploy this BEFORE removing apex from sauna-timer.
+  "routes": [
+    {
+      "pattern": "kyleplathe.com",
+      "custom_domain": true
+    }
+  ]
+}

@@ -55,16 +55,18 @@ Already connected for this repo. Settings that must stay in the dashboard:
 - **Build command:** `npm run build`
 - **Deploy command:** `npx wrangler deploy`
 
+If the live site falls behind `main`, open the Worker in Cloudflare → **Deployments** and confirm the latest Git deploy succeeded. Reconnect the GitHub App or click **Retry deployment** if builds stopped.
+
 After deploy, in the Worker → Settings → Domains & Routes, remove any leftover **Custom Domain** on `dev.kyleplathe.com` if Cloudflare still shows one.
 
 ### Backup: GitHub Actions
 
-If you would rather deploy from GitHub instead of Workers Builds, add repository secrets:
+`Deploy Worker` runs on every push to `main` (and via **Run workflow**). Add repository secrets:
 
 - `CLOUDFLARE_API_TOKEN` — token from [Create API token](https://dash.cloudflare.com/profile/api-tokens) using the **Edit Cloudflare Workers** template (include zone permission to attach routes)
 - `CLOUDFLARE_ACCOUNT_ID` — from the Cloudflare dashboard overview
 
-Then run **Actions → Deploy Worker → Run workflow**. Do not enable both Workers Builds auto-deploy and this Action, or every push will deploy twice.
+Do not enable both Workers Builds auto-deploy and this Action, or every push will deploy twice. Prefer one path: either Workers Builds **or** this Action.
 
 ## Hands-free flow
 

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { formatClock, phaseLabel } from '../utils/protocols'
 import type { ColdType, PhaseType } from '../types/timer'
 import {
@@ -16,7 +16,7 @@ interface LiveActivityArgs {
   phaseDurationMs: number
   status: string
   programName: string
-  /** When true, keep the screen on. Leave false so the phone can lock and show the live notification. */
+  /** When true, keep the screen on. Leave false so the phone can lock and show the live timer. */
   keepScreenAwake: boolean
   /** Prefer lock-screen notification + Now Playing while a session runs. */
   lockScreenLive: boolean
@@ -30,6 +30,8 @@ export function liveNotificationKey(
 ): string {
   return `${status}|${phaseType ?? 'none'}|${programName}`
 }
+
+const KEEPALIVE_SRC = `${import.meta.env.BASE_URL}lockscreen-keepalive.wav`
 
 function setMediaSession(
   title: string,
@@ -75,34 +77,49 @@ function clearMediaSession(): void {
 }
 
 /**
- * Near-silent keepalive so iOS/Android can show Now Playing on the lock screen.
- * Uses ambient session type so it should mix instead of stopping other music.
+ * HTMLAudioElement keepalive — required for iOS lock-screen Now Playing.
+ * Web Audio oscillators are suspended when the page backgrounds on iOS.
  */
 function startLockScreenAudio(): () => void {
   setIdleAudioMode('ambient')
   prepareCueAudio('ambient')
-  const AudioCtx =
-    window.AudioContext ||
-    (window as unknown as { webkitAudioContext?: typeof AudioContext })
-      .webkitAudioContext
-  if (!AudioCtx) return () => undefined
 
-  const ctx = new AudioCtx()
-  void ctx.resume()
-  const osc = ctx.createOscillator()
-  const gain = ctx.createGain()
-  osc.frequency.value = 20
-  gain.gain.value = 0.0008
-  osc.connect(gain)
-  gain.connect(ctx.destination)
-  osc.start()
+  const audio = new Audio(KEEPALIVE_SRC)
+  audio.loop = true
+  audio.volume = 0.01
+  audio.setAttribute('playsinline', 'true')
+  void audio.play().catch(() => undefined)
+
+  if ('mediaSession' in navigator) {
+    try {
+      navigator.mediaSession.setActionHandler('play', () => {
+        void audio.play().catch(() => undefined)
+        navigator.mediaSession.playbackState = 'playing'
+      })
+      navigator.mediaSession.setActionHandler('pause', () => {
+        audio.pause()
+        navigator.mediaSession.playbackState = 'paused'
+      })
+    } catch {
+      // Action handlers are optional.
+    }
+  }
 
   return () => {
     try {
-      osc.stop()
-      void ctx.close()
+      audio.pause()
+      audio.removeAttribute('src')
+      audio.load()
     } catch {
       // ignore
+    }
+    if ('mediaSession' in navigator) {
+      try {
+        navigator.mediaSession.setActionHandler('play', null)
+        navigator.mediaSession.setActionHandler('pause', null)
+      } catch {
+        // ignore
+      }
     }
   }
 }
@@ -110,11 +127,11 @@ function startLockScreenAudio(): () => void {
 /**
  * Best-effort lock-screen live timer from the web:
  * - One sticky notification per phase (not every second — that spams the shade)
- * - Media Session + quiet ambient audio so Now Playing shows a live countdown
+ * - Media Session + HTMLAudio keepalive so Now Playing shows a live countdown
  * - Optional wake lock (off by default so the phone can actually lock)
  *
- * True Dynamic Island Live Activities still require a native app.
- * Cue beeps/voice still use transient ducking so music lowers instead of stopping.
+ * No in-app fake Dynamic Island — that only ever lived inside the open app.
+ * True Live Activities still require a native app.
  */
 export function useLiveActivity({
   active,
@@ -126,25 +143,13 @@ export function useLiveActivity({
   programName,
   keepScreenAwake,
   lockScreenLive,
-}: LiveActivityArgs): { showInAppIsland: boolean } {
+}: LiveActivityArgs): void {
   const wakeLockRef = useRef<WakeLockSentinel | null>(null)
   const stopAudioRef = useRef<(() => void) | null>(null)
   const lastNotifyKeyRef = useRef<string | null>(null)
   const baseTitleRef = useRef(
     typeof document !== 'undefined' ? document.title : 'Ember & Ice',
   )
-  const [foreground, setForeground] = useState(
-    () =>
-      typeof document === 'undefined' || document.visibilityState === 'visible',
-  )
-
-  useEffect(() => {
-    const onVisibility = () => {
-      setForeground(document.visibilityState === 'visible')
-    }
-    document.addEventListener('visibilitychange', onVisibility)
-    return () => document.removeEventListener('visibilitychange', onVisibility)
-  }, [])
 
   useEffect(() => {
     if (!active) {
@@ -273,7 +278,4 @@ export function useLiveActivity({
       clearMediaSession()
     }
   }, [])
-
-  // In-app island only while the app is open and visible — lock screen uses notification / Now Playing.
-  return { showInAppIsland: active && foreground }
 }

@@ -1,12 +1,24 @@
-/* Ember & Ice — lock-screen live timer notifications */
+/* Ember & Ice — lock-screen live timer notifications (v3: HTMLAudio Now Playing) */
 const LIVE_TAG = 'ember-ice-live-timer'
+const SW_VERSION = 'ember-ice-sw-v3'
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(self.skipWaiting())
+  event.waitUntil(
+    (async () => {
+      // Bust any stale worker so phones pick up quiet sticky + Now Playing fixes.
+      console.info('[ember-ice]', SW_VERSION, 'installing')
+      await self.skipWaiting()
+    })(),
+  )
 })
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim())
+  event.waitUntil(
+    (async () => {
+      console.info('[ember-ice]', SW_VERSION, 'activating')
+      await self.clients.claim()
+    })(),
+  )
 })
 
 self.addEventListener('notificationclick', (event) => {

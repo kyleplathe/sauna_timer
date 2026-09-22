@@ -22,46 +22,19 @@ describe('liveNotifications', () => {
     expect(requestPermission).toHaveBeenCalledOnce()
   })
 
-  it('posts live timer updates through the service worker', async () => {
-    const postMessage = vi.fn()
-    const showNotification = vi.fn()
+  it('shows a quiet tagged notification via the service worker registration', async () => {
+    const showNotification = vi.fn(async () => undefined)
     vi.stubGlobal('Notification', { permission: 'granted' })
     vi.stubGlobal('navigator', {
       serviceWorker: {
         ready: Promise.resolve({
-          active: { postMessage },
+          active: { postMessage: vi.fn() },
           showNotification,
           getNotifications: async () => [],
+          update: async () => undefined,
         }),
         controller: null,
-      },
-    })
-
-    const { postLiveTimerNotification } = await import('./liveNotifications')
-    await postLiveTimerNotification({
-      title: '04:20 · Sauna',
-      body: 'Beginner · Ember & Ice',
-    })
-
-    expect(postMessage).toHaveBeenCalledWith({
-      type: 'live-timer-update',
-      title: '04:20 · Sauna',
-      body: 'Beginner · Ember & Ice',
-    })
-    expect(showNotification).not.toHaveBeenCalled()
-  })
-
-  it('falls back to a quiet tagged notification when no worker is active', async () => {
-    const showNotification = vi.fn()
-    vi.stubGlobal('Notification', { permission: 'granted' })
-    vi.stubGlobal('navigator', {
-      serviceWorker: {
-        ready: Promise.resolve({
-          active: null,
-          showNotification,
-          getNotifications: async () => [],
-        }),
-        controller: null,
+        register: async () => ({ update: async () => undefined }),
       },
     })
 
@@ -80,19 +53,36 @@ describe('liveNotifications', () => {
     })
   })
 
+  it('registers the service worker with updateViaCache none', async () => {
+    const register = vi.fn(async () => ({
+      update: vi.fn(async () => undefined),
+    }))
+    vi.stubGlobal('navigator', {
+      serviceWorker: { register },
+    })
+
+    const { ensureServiceWorker } = await import('./liveNotifications')
+    await ensureServiceWorker()
+
+    expect(register).toHaveBeenCalledWith(
+      expect.stringContaining('sw.js'),
+      expect.objectContaining({ updateViaCache: 'none' }),
+    )
+  })
+
   it('skips notifications when permission is missing', async () => {
+    const showNotification = vi.fn()
     vi.stubGlobal('Notification', { permission: 'denied' })
-    const postMessage = vi.fn()
     vi.stubGlobal('navigator', {
       serviceWorker: {
         ready: Promise.resolve({
-          active: { postMessage },
+          showNotification,
         }),
       },
     })
 
     const { postLiveTimerNotification } = await import('./liveNotifications')
     await postLiveTimerNotification({ title: 'x', body: 'y' })
-    expect(postMessage).not.toHaveBeenCalled()
+    expect(showNotification).not.toHaveBeenCalled()
   })
 })

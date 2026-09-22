@@ -12,7 +12,8 @@ Heat first. Cold second. End on cold. Hands-free walk timers so you do not have 
 - Custom protocols with save/edit/delete
 - Hands-free mode: alarm at phase end, short walk countdown, auto-start next phase
 - Voice cues and countdown beeps that **duck** background music when the browser allows (instead of stopping it)
-- **Lock-screen live timer** via one sticky notification per phase + Now Playing countdown (no in-app fake Dynamic Island)
+- **Background phase-end alarms** that can still sound while the phone is locked (HTMLAudio keepalive + scheduled alarm)
+- Optional lock-screen sticky notification / Now Playing countdown (no in-app fake Dynamic Island)
 - Square social share card of your stats (save as photo or share via the system sheet)
 - Session history, streaks, and CSV export for Apple Health import tools
 - Protocol guide and safety notes
@@ -79,15 +80,15 @@ Do not enable both Workers Builds auto-deploy and this Action, or every push wil
 3. A short alarm plays and a walk countdown starts (default 10 seconds, 5–30s).
 4. The next phase starts on its own.
 
-## Lock-screen live timer
+## Lock-screen / background alarms
 
 1. Install the timer to your home screen (iOS Share → Add to Home Screen).
-2. Leave **Live lock-screen timer** on in Settings (and tap **Allow lock-screen notifications** once).
-3. Leave **Keep screen awake** off so the phone can lock.
-4. Keep **Duck music during cues** on so beeps/voice lower Spotify/Apple Music instead of stopping it (Safari Audio Session support required).
-5. Start a session, allow notifications if prompted, then lock the phone — you should see one sticky notification for the current phase and a live countdown in **Now Playing**.
+2. Leave **Duck music during cues** on so beeps lower Spotify/Apple Music instead of stopping it.
+3. Leave **Keep screen awake** off if you want the phone to lock.
+4. Start a session, then lock the phone — a quiet audio heartbeat keeps the session alive enough to sound the **phase-end alarm** when it is time to move.
+5. Optional: **Live lock-screen timer** shows a sticky notification / Now Playing countdown (best-effort; not a native Live Activity).
 
-Browsers cannot run a native chronometer in the notification shade, and they cannot draw a real Dynamic Island Live Activity. Updating a notification every second re-alerts on many phones, so the second-by-second clock lives in Media Session / Now Playing (backed by a quiet looping HTML audio keepalive — Web Audio dies when iOS backgrounds the page). The notification only refreshes when the phase or pause state changes. There is no in-app fake island pill. True Live Activities still need a native app.
+Browsers cannot draw a real Dynamic Island Live Activity. The important sauna behavior is the phase-end alarm while locked with music still playing.
 
 ## Apple Health
 

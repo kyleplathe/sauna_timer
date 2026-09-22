@@ -14,12 +14,17 @@ import {
   type EngineEvent,
   type EngineState,
 } from '../utils/timerEngine'
+import { setSessionHeartbeat } from '../utils/scheduledAlarm'
 
 interface UseTimerArgs {
   program: Program | null
   handsFree: boolean
   transitionSeconds: number
   onEvent: (event: EngineEvent) => void
+}
+
+function phaseKey(state: EngineState): string {
+  return `${state.status}|${state.round}|${state.phaseIndex}|${state.phaseDurationMs}`
 }
 
 export function useTimer({
@@ -33,6 +38,7 @@ export function useTimer({
   const programRef = useRef(program)
   const optionsRef = useRef({ handsFree, transitionSeconds })
   const onEventRef = useRef(onEvent)
+  const endsAtRef = useRef<{ key: string; at: number } | null>(null)
 
   stateRef.current = state
   programRef.current = program
@@ -45,21 +51,72 @@ export function useTimer({
     result.events.forEach((event) => onEventRef.current(event))
   }, [])
 
+  const syncFromWallClock = useCallback(() => {
+    const current = stateRef.current
+    if (current.status !== 'running' && current.status !== 'transition') {
+      endsAtRef.current = null
+      return
+    }
+
+    const key = phaseKey(current)
+    if (!endsAtRef.current || endsAtRef.current.key !== key) {
+      endsAtRef.current = { key, at: Date.now() + current.remainingMs }
+    }
+
+    const remaining = Math.max(0, endsAtRef.current.at - Date.now())
+    const delta = current.remainingMs - remaining
+    if (delta < 80) return
+
+    const currentProgram = programRef.current
+    if (!currentProgram) return
+
+    apply(tick(current, currentProgram, delta, optionsRef.current))
+
+    const next = stateRef.current
+    if (next.status === 'running' || next.status === 'transition') {
+      const nextKey = phaseKey(next)
+      if (!endsAtRef.current || endsAtRef.current.key !== nextKey) {
+        endsAtRef.current = { key: nextKey, at: Date.now() + next.remainingMs }
+      }
+    } else {
+      endsAtRef.current = null
+    }
+  }, [apply])
+
   useEffect(() => {
-    if (state.status !== 'running' && state.status !== 'transition') return
+    setSessionHeartbeat(() => {
+      syncFromWallClock()
+    })
+    return () => setSessionHeartbeat(null)
+  }, [syncFromWallClock])
 
-    let last = Date.now()
+  useEffect(() => {
+    if (state.status !== 'running' && state.status !== 'transition') {
+      endsAtRef.current = null
+      return
+    }
+
+    endsAtRef.current = {
+      key: phaseKey(stateRef.current),
+      at: Date.now() + stateRef.current.remainingMs,
+    }
+
     const id = window.setInterval(() => {
-      const now = Date.now()
-      const delta = now - last
-      last = now
-      const currentProgram = programRef.current
-      if (!currentProgram) return
-      apply(tick(stateRef.current, currentProgram, delta, optionsRef.current))
-    }, 100)
+      syncFromWallClock()
+    }, 250)
 
-    return () => window.clearInterval(id)
-  }, [apply, state.status])
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') syncFromWallClock()
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+    window.addEventListener('focus', onVisibility)
+
+    return () => {
+      window.clearInterval(id)
+      document.removeEventListener('visibilitychange', onVisibility)
+      window.removeEventListener('focus', onVisibility)
+    }
+  }, [state.status, state.round, state.phaseIndex, syncFromWallClock])
 
   const start = useCallback(() => {
     if (!programRef.current) return
@@ -68,6 +125,7 @@ export function useTimer({
 
   const pause = useCallback(() => {
     const next = pauseEngine(stateRef.current)
+    endsAtRef.current = null
     stateRef.current = next
     setState(next)
   }, [])
@@ -76,9 +134,16 @@ export function useTimer({
     const next = resumeEngine(stateRef.current)
     stateRef.current = next
     setState(next)
+    if (next.status === 'running' || next.status === 'transition') {
+      endsAtRef.current = {
+        key: phaseKey(next),
+        at: Date.now() + next.remainingMs,
+      }
+    }
   }, [])
 
   const stop = useCallback(() => {
+    endsAtRef.current = null
     const next = stopSession()
     stateRef.current = next
     setState(next)

@@ -1,6 +1,6 @@
-/* Ember & Ice — lock-screen live timer notifications (v3: HTMLAudio Now Playing) */
+/* Ember & Ice — lock-screen + background phase alarms (v4) */
 const LIVE_TAG = 'ember-ice-live-timer'
-const SW_VERSION = 'ember-ice-sw-v3'
+const SW_VERSION = 'ember-ice-sw-v4'
 
 self.addEventListener('install', (event) => {
   event.waitUntil(

@@ -17,6 +17,10 @@ import type { Program, Session } from './types/timer'
 import { downloadHealthData } from './utils/healthExport'
 import { requestLockScreenPermission } from './utils/liveNotifications'
 import { phaseLabel, PRESET_PROGRAMS } from './utils/protocols'
+import {
+  cancelScheduledPhaseEndAlarm,
+  schedulePhaseEndAlarm,
+} from './utils/scheduledAlarm'
 import type { EngineEvent } from './utils/timerEngine'
 
 type View =
@@ -88,28 +92,48 @@ function App() {
   const timerRef = useRef<ReturnType<typeof useTimer> | null>(null)
 
   const handleEvent = useCallback((event: EngineEvent) => {
+    const volume = settings.audio.volume
     if (event.type === 'phaseStart') {
       audioRef.current.playPhaseChangeSound(event.phase.type)
+      if (settings.audio.enabled) {
+        schedulePhaseEndAlarm(event.phase.duration * 1000, volume)
+      }
     }
     if (event.type === 'warning') {
       audioRef.current.playWarningSound(event.secondsRemaining)
     }
     if (event.type === 'transitionStart') {
+      // Immediate "move now" cue, then alarm again when the walk timer ends.
       audioRef.current.playTransitionCue(
         phaseLabel(
           event.nextPhase.type,
           selectedProgram?.coldType ?? 'shower',
         ),
       )
+      if (settings.audio.enabled) {
+        schedulePhaseEndAlarm(
+          settings.handsFreeTransitionDuration * 1000,
+          volume,
+        )
+      }
+    }
+    if (event.type === 'phaseEnd') {
+      cancelScheduledPhaseEndAlarm()
     }
     if (event.type === 'complete') {
+      cancelScheduledPhaseEndAlarm()
       audioRef.current.playCompletionSound()
       persistRef.current(true, event.completedPhases, event.totalPhases)
       timerRef.current?.stop()
       setSelectedProgram(null)
       setView('history')
     }
-  }, [selectedProgram?.coldType])
+  }, [
+    selectedProgram?.coldType,
+    settings.audio.enabled,
+    settings.audio.volume,
+    settings.handsFreeTransitionDuration,
+  ])
 
   const timer = useTimer({
     program: selectedProgram,
@@ -186,6 +210,7 @@ function App() {
   }
 
   const handleStop = () => {
+    cancelScheduledPhaseEndAlarm()
     persistRef.current(
       false,
       timer.state.completedPhases,
@@ -194,6 +219,24 @@ function App() {
     timer.stop()
     setSelectedProgram(null)
     setView('home')
+  }
+
+  const handlePause = () => {
+    cancelScheduledPhaseEndAlarm()
+    timer.pause()
+  }
+
+  const handleResume = () => {
+    const remainingMs = timer.state.remainingMs
+    timer.resume()
+    if (settings.audio.enabled && remainingMs > 0) {
+      schedulePhaseEndAlarm(remainingMs, settings.audio.volume)
+    }
+  }
+
+  const handleSkip = () => {
+    cancelScheduledPhaseEndAlarm()
+    timer.skip()
   }
 
   return (
@@ -291,10 +334,10 @@ function App() {
               nextPhase={timer.nextPhase}
               temperatureUnit={settings.temperatureUnit}
               onStart={handleStart}
-              onPause={timer.pause}
-              onResume={timer.resume}
+              onPause={handlePause}
+              onResume={handleResume}
               onStop={handleStop}
-              onSkip={timer.skip}
+              onSkip={handleSkip}
               onContinue={timer.continueNext}
             />
           </motion.div>

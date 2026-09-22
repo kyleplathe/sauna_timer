@@ -6,7 +6,8 @@ import {
   postLiveTimerNotification,
   requestLockScreenPermission,
 } from '../utils/liveNotifications'
-import { prepareCueAudio, setIdleAudioMode } from '../utils/audioSession'
+import { setIdleAudioMode } from '../utils/audioSession'
+import { startSessionKeepalive } from '../utils/scheduledAlarm'
 
 interface LiveActivityArgs {
   active: boolean
@@ -16,7 +17,7 @@ interface LiveActivityArgs {
   phaseDurationMs: number
   status: string
   programName: string
-  /** When true, keep the screen on. Leave false so the phone can lock and show the live timer. */
+  /** When true, keep the screen on. Leave false so the phone can lock. */
   keepScreenAwake: boolean
   /** Prefer lock-screen notification + Now Playing while a session runs. */
   lockScreenLive: boolean
@@ -30,8 +31,6 @@ export function liveNotificationKey(
 ): string {
   return `${status}|${phaseType ?? 'none'}|${programName}`
 }
-
-const KEEPALIVE_SRC = `${import.meta.env.BASE_URL}lockscreen-keepalive.wav`
 
 function setMediaSession(
   title: string,
@@ -77,61 +76,12 @@ function clearMediaSession(): void {
 }
 
 /**
- * HTMLAudioElement keepalive — required for iOS lock-screen Now Playing.
- * Web Audio oscillators are suspended when the page backgrounds on iOS.
- */
-function startLockScreenAudio(): () => void {
-  setIdleAudioMode('ambient')
-  prepareCueAudio('ambient')
-
-  const audio = new Audio(KEEPALIVE_SRC)
-  audio.loop = true
-  audio.volume = 0.01
-  audio.setAttribute('playsinline', 'true')
-  void audio.play().catch(() => undefined)
-
-  if ('mediaSession' in navigator) {
-    try {
-      navigator.mediaSession.setActionHandler('play', () => {
-        void audio.play().catch(() => undefined)
-        navigator.mediaSession.playbackState = 'playing'
-      })
-      navigator.mediaSession.setActionHandler('pause', () => {
-        audio.pause()
-        navigator.mediaSession.playbackState = 'paused'
-      })
-    } catch {
-      // Action handlers are optional.
-    }
-  }
-
-  return () => {
-    try {
-      audio.pause()
-      audio.removeAttribute('src')
-      audio.load()
-    } catch {
-      // ignore
-    }
-    if ('mediaSession' in navigator) {
-      try {
-        navigator.mediaSession.setActionHandler('play', null)
-        navigator.mediaSession.setActionHandler('pause', null)
-      } catch {
-        // ignore
-      }
-    }
-  }
-}
-
-/**
- * Best-effort lock-screen live timer from the web:
- * - One sticky notification per phase (not every second — that spams the shade)
- * - Media Session + HTMLAudio keepalive so Now Playing shows a live countdown
- * - Optional wake lock (off by default so the phone can actually lock)
+ * Session background support:
+ * - HTMLAudio keepalive so phase-end alarms can still fire while locked
+ * - Optional sticky notification + Now Playing metadata
+ * - Optional wake lock (off by default)
  *
- * No in-app fake Dynamic Island — that only ever lived inside the open app.
- * True Live Activities still require a native app.
+ * Music stays in ambient/mix mode; short cues duck when the browser allows it.
  */
 export function useLiveActivity({
   active,
@@ -168,15 +118,12 @@ export function useLiveActivity({
     let cancelled = false
 
     const boot = async () => {
+      // Always keep HTMLAudio alive during a session so locked-phone alarms work.
+      if (!cancelled && !stopAudioRef.current) {
+        stopAudioRef.current = startSessionKeepalive()
+      }
       if (lockScreenLive) {
         await requestLockScreenPermission()
-        if (!cancelled && !stopAudioRef.current) {
-          stopAudioRef.current = startLockScreenAudio()
-        }
-      } else {
-        stopAudioRef.current?.()
-        stopAudioRef.current = null
-        setIdleAudioMode('auto')
       }
     }
     void boot()
@@ -247,14 +194,12 @@ export function useLiveActivity({
     setMediaSession(title, programName, 'Ember & Ice', playbackState, durationSec, positionSec)
 
     if (lockScreenLive) {
-      // Web notifications have no chronometer — replacing every second re-alerts
-      // on many phones. Keep one sticky note per phase; Now Playing holds the live clock.
       const key = liveNotificationKey(phaseType, status, programName)
       if (lastNotifyKeyRef.current !== key) {
         lastNotifyKeyRef.current = key
         void postLiveTimerNotification({
           title: `${label} · ${programName}`,
-          body: `${clock} left · live countdown is in Now Playing`,
+          body: `${clock} left · alarm will sound when this phase ends`,
         })
       }
     }

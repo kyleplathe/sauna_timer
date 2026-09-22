@@ -134,6 +134,7 @@ function App() {
     phaseType: currentPhase?.type ?? null,
     coldType: selectedProgram?.coldType ?? settings.preferredColdType,
     remainingMs: timer.state.remainingMs,
+    phaseDurationMs: timer.state.phaseDurationMs,
     status: timer.state.status,
     programName: selectedProgram?.name ?? 'Sauna Timer',
     keepScreenAwake: !!settings.keepScreenAwake,

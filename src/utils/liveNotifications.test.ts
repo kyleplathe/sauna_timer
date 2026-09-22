@@ -51,6 +51,35 @@ describe('liveNotifications', () => {
     expect(showNotification).not.toHaveBeenCalled()
   })
 
+  it('falls back to a quiet tagged notification when no worker is active', async () => {
+    const showNotification = vi.fn()
+    vi.stubGlobal('Notification', { permission: 'granted' })
+    vi.stubGlobal('navigator', {
+      serviceWorker: {
+        ready: Promise.resolve({
+          active: null,
+          showNotification,
+          getNotifications: async () => [],
+        }),
+        controller: null,
+      },
+    })
+
+    const { postLiveTimerNotification } = await import('./liveNotifications')
+    await postLiveTimerNotification({
+      title: 'Sauna · Beginner',
+      body: '04:20 left · live countdown is in Now Playing',
+    })
+
+    expect(showNotification).toHaveBeenCalledWith('Sauna · Beginner', {
+      body: '04:20 left · live countdown is in Now Playing',
+      tag: 'ember-ice-live-timer',
+      renotify: false,
+      silent: true,
+      requireInteraction: true,
+    })
+  })
+
   it('skips notifications when permission is missing', async () => {
     vi.stubGlobal('Notification', { permission: 'denied' })
     const postMessage = vi.fn()

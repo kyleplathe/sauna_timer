@@ -122,11 +122,11 @@ export function Settings({ settings, onUpdate }: SettingsProps) {
       <section className="space-y-4 rounded-3xl bg-white p-6 shadow-sm dark:bg-stone-900">
         <h3 className="text-xl font-semibold">Lock screen</h3>
         <p className="text-sm text-stone-500">
-          Web apps cannot draw a real Dynamic Island Live Activity. Instead we
-          keep one quiet sticky notification per phase and a live Now Playing
-          countdown on the lock screen while a session runs (best on an
-          installed home-screen app). Voice cues still duck music when the
-          browser allows it.
+          Web apps cannot draw a real Dynamic Island Live Activity, so there is
+          no in-app fake island. While a session runs we keep one quiet sticky
+          notification per phase and a live Now Playing countdown on the lock
+          screen (best on an installed home-screen app). Voice cues still duck
+          music when the browser allows it.
         </p>
         <Toggle
           label="Live lock-screen timer"

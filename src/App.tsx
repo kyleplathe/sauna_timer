@@ -8,7 +8,6 @@ import { SessionHistory } from './components/Session/SessionHistory'
 import { SessionStats } from './components/Session/SessionStats'
 import { ShareStatsCard } from './components/Session/ShareStatsCard'
 import { Settings } from './components/Settings'
-import { LiveActivityIsland } from './components/Timer/LiveActivityIsland'
 import { TimerDisplay } from './components/Timer/TimerDisplay'
 import { useAudio } from './hooks/useAudio'
 import { useLiveActivity } from './hooks/useLiveActivity'
@@ -129,7 +128,7 @@ function App() {
     timer.state.status !== 'idle' &&
     timer.state.status !== 'complete'
 
-  const { showInAppIsland } = useLiveActivity({
+  useLiveActivity({
     active: liveActive,
     phaseType: currentPhase?.type ?? null,
     coldType: selectedProgram?.coldType ?? settings.preferredColdType,
@@ -199,18 +198,6 @@ function App() {
 
   return (
     <div className="app-shell bg-[#f6efe6] text-stone-900 transition-colors dark:bg-[#0c0a09] dark:text-stone-100">
-      {showInAppIsland && currentPhase && selectedProgram && (
-        <LiveActivityIsland
-          visible
-          phaseType={currentPhase.type}
-          coldType={selectedProgram.coldType}
-          remainingMs={timer.state.remainingMs}
-          status={timer.state.status}
-          currentRound={timer.state.round}
-          totalRounds={selectedProgram.rounds}
-        />
-      )}
-
       {view !== 'timer' && (
         <header className="app-header sticky top-0 z-20 border-b border-stone-200/70 bg-[#f6efe6]/90 backdrop-blur dark:border-stone-800 dark:bg-[#0c0a09]/90">
           <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">

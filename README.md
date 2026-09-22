@@ -12,7 +12,7 @@ Heat first. Cold second. End on cold. Hands-free walk timers so you do not have 
 - Custom protocols with save/edit/delete
 - Hands-free mode: alarm at phase end, short walk countdown, auto-start next phase
 - Voice cues and countdown beeps that **duck** background music when the browser allows (instead of stopping it)
-- **Lock-screen live timer** via one sticky notification per phase + Now Playing countdown (in-app Dynamic Island–style pill only while the app is open)
+- **Lock-screen live timer** via one sticky notification per phase + Now Playing countdown (no in-app fake Dynamic Island)
 - Square social share card of your stats (save as photo or share via the system sheet)
 - Session history, streaks, and CSV export for Apple Health import tools
 - Protocol guide and safety notes
@@ -87,7 +87,7 @@ Do not enable both Workers Builds auto-deploy and this Action, or every push wil
 4. Keep **Duck music during cues** on so beeps/voice lower Spotify/Apple Music instead of stopping it (Safari Audio Session support required).
 5. Start a session, allow notifications if prompted, then lock the phone — you should see one sticky notification for the current phase and a live countdown in **Now Playing**.
 
-Browsers cannot run a native chronometer in the notification shade. Updating a notification every second re-alerts on many phones, so the second-by-second clock lives in Media Session / Now Playing. The notification only refreshes when the phase or pause state changes. True Dynamic Island Live Activities still need a native app; this is the web best-effort.
+Browsers cannot run a native chronometer in the notification shade, and they cannot draw a real Dynamic Island Live Activity. Updating a notification every second re-alerts on many phones, so the second-by-second clock lives in Media Session / Now Playing (backed by a quiet looping HTML audio keepalive — Web Audio dies when iOS backgrounds the page). The notification only refreshes when the phase or pause state changes. There is no in-app fake island pill. True Live Activities still need a native app.
 
 ## Apple Health
 

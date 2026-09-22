@@ -12,7 +12,7 @@ Heat first. Cold second. End on cold. Hands-free walk timers so you do not have 
 - Custom protocols with save/edit/delete
 - Hands-free mode: alarm at phase end, short walk countdown, auto-start next phase
 - Voice cues and countdown beeps that **duck** background music when the browser allows (instead of stopping it)
-- Live activity pill (Dynamic Island–style) plus screen wake lock and Now Playing metadata while a session runs
+- **Lock-screen live timer** via notification + Now Playing (in-app island only while the app is open)
 - Square social share card of your stats (save as photo or share via the system sheet)
 - Session history, streaks, and CSV export for Apple Health import tools
 - Protocol guide and safety notes
@@ -25,7 +25,7 @@ npm ci
 npm run dev
 ```
 
-Open the homepage at [http://localhost:5173](http://localhost:5173), the lab at [http://localhost:5173/dev/](http://localhost:5173/dev/), and the timer at [http://localhost:5173/dev/sauna/](http://localhost:5173/dev/sauna/).
+Open the lab at [http://localhost:5173/dev/](http://localhost:5173/dev/), and the timer at [http://localhost:5173/dev/sauna/](http://localhost:5173/dev/sauna/).
 
 ```bash
 npm test
@@ -33,18 +33,18 @@ npm run lint
 npm run build
 ```
 
-`npm run build` writes the splash to `dist/`, the lab to `dist/dev/`, and the timer to `dist/dev/sauna/`.
+`npm run build` writes the lab to `dist/dev/` and the timer to `dist/dev/sauna/`. The personal blog at the apex of kyleplathe.com is **not** part of this Worker anymore.
 
 ## Deploy to Cloudflare
 
-- Home: https://kyleplathe.com
 - Lab: https://kyleplathe.com/dev/
 - Timer: https://kyleplathe.com/dev/sauna/
-- Fallback: https://sauna-timer.kyleplathe.workers.dev
+- Worker fallback: https://sauna-timer.kyleplathe.workers.dev
+- Personal blog (separate): https://kyleplathe.com
 
-The Worker is the site origin (`custom_domain` on `kyleplathe.com`) so `/` can go live without the old host’s broken TLS. Prototypes stay under `/dev`. The splash is a stand-in until the blog is written.
+This Worker only claims `kyleplathe.com/dev` and `kyleplathe.com/dev/*`. Point the apex `kyleplathe.com` at your blog host (Pages, another Worker, etc.).
 
-If deploy fails with **100117**, delete the leftover apex **A / AAAA / CNAME** for `kyleplathe.com` (the record still pointing at the old origin), then retry the Worker build. Keep the zone on Cloudflare nameservers. Do not recreate `dev.kyleplathe.com`.
+If deploy fails with **100117**, clean leftover apex **A / AAAA / CNAME** records that still fight the blog origin. Keep the zone on Cloudflare nameservers. Do not recreate `dev.kyleplathe.com`.
 
 ### Workers Builds (GitHub App)
 
@@ -57,7 +57,7 @@ Already connected for this repo. Settings that must stay in the dashboard:
 
 If the live site falls behind `main`, open the Worker in Cloudflare → **Deployments** and confirm the latest Git deploy succeeded. Reconnect the GitHub App or click **Retry deployment** if builds stopped.
 
-After deploy, in the Worker → Settings → Domains & Routes, remove any leftover **Custom Domain** on `dev.kyleplathe.com` if Cloudflare still shows one.
+After deploy, in the Worker → Settings → Domains & Routes, remove any leftover **Custom Domain** on apex `kyleplathe.com` if Cloudflare still shows one attached to this Worker — apex belongs to the blog.
 
 ### Backup: GitHub Actions
 
@@ -74,6 +74,14 @@ Do not enable both Workers Builds auto-deploy and this Action, or every push wil
 2. Finish a sauna phase.
 3. A short alarm plays and a walk countdown starts (default 10 seconds, 5–30s).
 4. The next phase starts on its own.
+
+## Lock-screen live timer
+
+1. Install the timer to your home screen (iOS Share → Add to Home Screen).
+2. Leave **Live lock-screen timer** on in Settings.
+3. Leave **Keep screen awake** off so the phone can lock.
+4. Start a session and allow notifications when prompted.
+5. Lock the phone — you should see the updating notification and/or Now Playing countdown. True Dynamic Island Live Activities still need a native app; this is the web best-effort.
 
 ## Apple Health
 

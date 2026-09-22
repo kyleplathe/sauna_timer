@@ -1,10 +1,13 @@
 export type CueAudioMode = 'transient' | 'ambient'
+export type IdleAudioMode = 'auto' | 'ambient'
 
 type AudioSessionNavigator = Navigator & {
   audioSession?: {
     type: string
   }
 }
+
+let idleMode: IdleAudioMode = 'auto'
 
 /**
  * Prefer ducking background music for short cues instead of pausing it.
@@ -20,11 +23,30 @@ export function prepareCueAudio(mode: CueAudioMode = 'transient'): void {
   }
 }
 
+/**
+ * What to restore after a ducked cue ends.
+ * Lock-screen keepalive uses ambient so music keeps mixing under Now Playing.
+ */
+export function setIdleAudioMode(mode: IdleAudioMode): void {
+  idleMode = mode
+  const session = (navigator as AudioSessionNavigator).audioSession
+  if (!session) return
+  try {
+    session.type = mode
+  } catch {
+    // ignore
+  }
+}
+
+export function getIdleAudioMode(): IdleAudioMode {
+  return idleMode
+}
+
 export function releaseCueAudio(): void {
   const session = (navigator as AudioSessionNavigator).audioSession
   if (!session) return
   try {
-    session.type = 'auto'
+    session.type = idleMode
   } catch {
     // ignore
   }

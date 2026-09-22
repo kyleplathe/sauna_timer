@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import type { AppSettings } from '../types/timer'
+import { requestLockScreenPermission } from '../utils/liveNotifications'
 
 interface SettingsProps {
   settings: AppSettings
@@ -7,6 +9,18 @@ interface SettingsProps {
 }
 
 export function Settings({ settings, onUpdate }: SettingsProps) {
+  const [notifyStatus, setNotifyStatus] = useState<NotificationPermission | 'unsupported'>(
+    () =>
+      typeof Notification === 'undefined'
+        ? 'unsupported'
+        : Notification.permission,
+  )
+
+  const allowNotifications = async () => {
+    const result = await requestLockScreenPermission()
+    setNotifyStatus(result)
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -103,6 +117,44 @@ export function Settings({ settings, onUpdate }: SettingsProps) {
             className="w-full"
           />
         </label>
+      </section>
+
+      <section className="space-y-4 rounded-3xl bg-white p-6 shadow-sm dark:bg-stone-900">
+        <h3 className="text-xl font-semibold">Lock screen</h3>
+        <p className="text-sm text-stone-500">
+          Web apps cannot draw a real Dynamic Island Live Activity. Instead we
+          keep a live notification / Now Playing countdown on the lock screen
+          while a session runs (best on an installed home-screen app). Voice
+          cues still duck music when the browser allows it.
+        </p>
+        <Toggle
+          label="Live lock-screen timer"
+          checked={settings.lockScreenLive !== false}
+          onChange={(lockScreenLive) => onUpdate({ lockScreenLive })}
+        />
+        <Toggle
+          label="Keep screen awake"
+          checked={!!settings.keepScreenAwake}
+          onChange={(keepScreenAwake) => onUpdate({ keepScreenAwake })}
+        />
+        <p className="text-sm text-stone-500">
+          Leave screen-awake off if you want the phone to lock and show the live
+          timer on the lock screen.
+        </p>
+        {notifyStatus !== 'unsupported' && (
+          <button
+            type="button"
+            onClick={() => void allowNotifications()}
+            disabled={notifyStatus === 'granted'}
+            className="w-full rounded-xl bg-stone-900 py-3 text-white disabled:opacity-50 dark:bg-stone-100 dark:text-stone-900"
+          >
+            {notifyStatus === 'granted'
+              ? 'Notifications allowed'
+              : notifyStatus === 'denied'
+                ? 'Notifications blocked — enable in system Settings'
+                : 'Allow lock-screen notifications'}
+          </button>
+        )}
       </section>
 
       <section className="space-y-4 rounded-3xl bg-white p-6 shadow-sm dark:bg-stone-900">

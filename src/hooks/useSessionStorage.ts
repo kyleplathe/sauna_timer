@@ -20,6 +20,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   temperatureUnit: 'F',
   disclaimerAccepted: false,
   practiceDismissed: false,
+  keepScreenAwake: false,
+  lockScreenLive: true,
 }
 
 function readJson<T>(key: string, fallback: T): T {

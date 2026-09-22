@@ -12,7 +12,7 @@ Heat first. Cold second. End on cold. Hands-free walk timers so you do not have 
 - Custom protocols with save/edit/delete
 - Hands-free mode: alarm at phase end, short walk countdown, auto-start next phase
 - Voice cues and countdown beeps that **duck** background music when the browser allows (instead of stopping it)
-- Live activity pill (Dynamic Island–style) plus screen wake lock and Now Playing metadata while a session runs
+- **Lock-screen live timer** via notification + Now Playing (in-app Dynamic Island–style pill only while the app is open)
 - Square social share card of your stats (save as photo or share via the system sheet)
 - Session history, streaks, and CSV export for Apple Health import tools
 - Protocol guide and safety notes
@@ -74,6 +74,16 @@ Do not enable both Workers Builds auto-deploy and this Action, or every push wil
 2. Finish a sauna phase.
 3. A short alarm plays and a walk countdown starts (default 10 seconds, 5–30s).
 4. The next phase starts on its own.
+
+## Lock-screen live timer
+
+1. Install the timer to your home screen (iOS Share → Add to Home Screen).
+2. Leave **Live lock-screen timer** on in Settings (and tap **Allow lock-screen notifications** once).
+3. Leave **Keep screen awake** off so the phone can lock.
+4. Keep **Duck music during cues** on so beeps/voice lower Spotify/Apple Music instead of stopping it (Safari Audio Session support required).
+5. Start a session, allow notifications if prompted, then lock the phone — you should see the updating notification and/or Now Playing countdown.
+
+True Dynamic Island Live Activities still need a native app; this is the web best-effort. iOS notification updates are more limited than Android.
 
 ## Apple Health
 

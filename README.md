@@ -25,7 +25,7 @@ npm ci
 npm run dev
 ```
 
-Open the homepage at [http://localhost:5173](http://localhost:5173), the lab at [http://localhost:5173/dev/](http://localhost:5173/dev/), and the timer at [http://localhost:5173/dev/sauna/](http://localhost:5173/dev/sauna/).
+Open the lab at [http://localhost:5173/dev/](http://localhost:5173/dev/) and the timer at [http://localhost:5173/dev/sauna/](http://localhost:5173/dev/sauna/). Root redirects to `/dev/`.
 
 ```bash
 npm test
@@ -33,18 +33,24 @@ npm run lint
 npm run build
 ```
 
-`npm run build` writes the splash to `dist/`, the lab to `dist/dev/`, and the timer to `dist/dev/sauna/`.
+`npm run build` writes the lab to `dist/dev/` and the timer to `dist/dev/sauna/`. The personal blog at the apex of kyleplathe.com is **not** part of this Worker.
 
 ## Deploy to Cloudflare
 
-- Home: https://kyleplathe.com
 - Lab: https://kyleplathe.com/dev/
 - Timer: https://kyleplathe.com/dev/sauna/
-- Fallback: https://sauna-timer.kyleplathe.workers.dev
+- Worker fallback: https://sauna-timer.kyleplathe.workers.dev
+- Personal blog (separate repo): https://kyleplathe.com → [`kyleplathe/kyle_plathe`](https://github.com/kyleplathe/kyle_plathe)
 
-The Worker is the site origin (`custom_domain` on `kyleplathe.com`) so `/` can go live without the old host’s broken TLS. Prototypes stay under `/dev`. The splash is a stand-in until the blog is written.
+This Worker only claims `kyleplathe.com/dev` and `kyleplathe.com/dev/*`. Point the apex `kyleplathe.com` at the blog Worker (`kyle-plathe`).
 
-If deploy fails with **100117**, delete the leftover apex **A / AAAA / CNAME** for `kyleplathe.com` (the record still pointing at the old origin), then retry the Worker build. Keep the zone on Cloudflare nameservers. Do not recreate `dev.kyleplathe.com`.
+### Split deploy order
+
+1. Deploy the blog Worker so it owns the apex custom domain.
+2. Merge this repo’s change that drops apex from `sauna-timer` (keeps `/dev` only).
+3. In Cloudflare → Workers → `sauna-timer` → Domains & Routes, remove any leftover **Custom Domain** on apex `kyleplathe.com` if it still shows one.
+
+If deploy fails with **100117**, clean leftover apex **A / AAAA / CNAME** records that still fight the blog origin. Keep the zone on Cloudflare nameservers. Do not recreate `dev.kyleplathe.com`.
 
 ### Workers Builds (GitHub App)
 
@@ -56,8 +62,6 @@ Already connected for this repo. Settings that must stay in the dashboard:
 - **Deploy command:** `npx wrangler deploy`
 
 If the live site falls behind `main`, open the Worker in Cloudflare → **Deployments** and confirm the latest Git deploy succeeded. Reconnect the GitHub App or click **Retry deployment** if builds stopped.
-
-After deploy, in the Worker → Settings → Domains & Routes, remove any leftover **Custom Domain** on `dev.kyleplathe.com` if Cloudflare still shows one.
 
 ### Backup: GitHub Actions
 

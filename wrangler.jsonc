@@ -11,13 +11,15 @@
     "directory": "./dist",
     "not_found_handling": "single-page-application",
   },
+  // Apex kyleplathe.com is reserved for the personal blog (kyleplathe/kyle_plathe).
+  // This Worker only serves the lab + timer under /dev.
   "routes": [
     {
-      "pattern": "kyleplathe.com",
-      "custom_domain": true,
+      "pattern": "kyleplathe.com/dev",
+      "zone_name": "kyleplathe.com",
     },
     {
-      "pattern": "kyleplathe.com/*",
+      "pattern": "kyleplathe.com/dev/*",
       "zone_name": "kyleplathe.com",
     },
   ],

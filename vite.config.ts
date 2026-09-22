@@ -8,7 +8,6 @@ import { defineConfig } from 'vite'
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url))
 const hubDir = path.join(rootDir, 'hub')
-const homeDir = path.join(rootDir, 'home')
 
 function staticDirServer(): Plugin {
   const mime: Record<string, string> = {
@@ -18,12 +17,16 @@ function staticDirServer(): Plugin {
     '.json': 'application/json; charset=utf-8',
     '.js': 'text/javascript; charset=utf-8',
     '.ico': 'image/x-icon',
+    '.jpg': 'image/jpeg',
   }
 
-  function sendFile(res: {
-    setHeader: (name: string, value: string) => void
-    end: (body: Buffer) => void
-  }, file: string) {
+  function sendFile(
+    res: {
+      setHeader: (name: string, value: string) => void
+      end: (body: Buffer) => void
+    },
+    file: string,
+  ) {
     res.setHeader(
       'Content-Type',
       mime[path.extname(file)] ?? 'application/octet-stream',
@@ -39,7 +42,7 @@ function staticDirServer(): Plugin {
   }
 
   return {
-    name: 'kyleplathe-static-dev',
+    name: 'kyleplathe-lab-static-dev',
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
         const url = (req.url ?? '/').split('?')[0]
@@ -50,6 +53,13 @@ function staticDirServer(): Plugin {
           url.startsWith('/node_modules')
         ) {
           next()
+          return
+        }
+
+        if (url === '/' || url === '') {
+          res.statusCode = 302
+          res.setHeader('Location', '/dev/')
+          res.end()
           return
         }
 
@@ -64,13 +74,6 @@ function staticDirServer(): Plugin {
             return
           }
           sendFile(res, file)
-          return
-        }
-
-        const homeRelative = url === '/' ? 'index.html' : url.replace(/^\//, '')
-        const homeFile = safeFile(homeDir, homeRelative)
-        if (homeFile) {
-          sendFile(res, homeFile)
           return
         }
 
@@ -97,5 +100,6 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
     strictPort: true,
+    allowedHosts: true,
   },
 })

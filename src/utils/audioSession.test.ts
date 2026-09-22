@@ -1,9 +1,15 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { prepareCueAudio, releaseCueAudio } from './audioSession'
+import {
+  getIdleAudioMode,
+  prepareCueAudio,
+  releaseCueAudio,
+  setIdleAudioMode,
+} from './audioSession'
 
 describe('audioSession', () => {
   afterEach(() => {
     Reflect.deleteProperty(navigator, 'audioSession')
+    setIdleAudioMode('auto')
   })
 
   it('sets transient type for ducking when supported', () => {
@@ -18,6 +24,24 @@ describe('audioSession', () => {
 
     releaseCueAudio()
     expect(session.type).toBe('auto')
+  })
+
+  it('restores ambient idle mode after a ducked cue', () => {
+    const session = { type: 'auto' }
+    Object.defineProperty(navigator, 'audioSession', {
+      configurable: true,
+      value: session,
+    })
+
+    setIdleAudioMode('ambient')
+    expect(getIdleAudioMode()).toBe('ambient')
+    expect(session.type).toBe('ambient')
+
+    prepareCueAudio('transient')
+    expect(session.type).toBe('transient')
+
+    releaseCueAudio()
+    expect(session.type).toBe('ambient')
   })
 
   it('swallows unsupported type assignment', () => {

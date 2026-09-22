@@ -12,13 +12,17 @@ interface LiveActivityIslandProps {
   totalRounds: number
 }
 
-function tone(phaseType: PhaseType, status: string): string {
+function toneDot(phaseType: PhaseType, status: string): string {
   if (status === 'transition' || status === 'awaitingNext') {
-    return 'from-amber-500 to-orange-600'
+    return 'bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.85)]'
   }
-  if (phaseType === 'sauna') return 'from-orange-500 to-red-600'
-  if (phaseType === 'cold') return 'from-cyan-500 to-sky-700'
-  return 'from-emerald-500 to-teal-700'
+  if (phaseType === 'sauna') {
+    return 'bg-orange-400 shadow-[0_0_10px_rgba(251,146,60,0.85)]'
+  }
+  if (phaseType === 'cold') {
+    return 'bg-cyan-300 shadow-[0_0_10px_rgba(103,232,249,0.85)]'
+  }
+  return 'bg-emerald-300 shadow-[0_0_10px_rgba(110,231,183,0.85)]'
 }
 
 export function LiveActivityIsland({
@@ -50,12 +54,12 @@ export function LiveActivityIsland({
           className="pointer-events-none fixed top-[max(0.75rem,calc(env(safe-area-inset-top,0px)+0.5rem))] left-1/2 z-50 -translate-x-1/2"
           aria-live="polite"
         >
-          <div
-            className={`flex min-w-[12.5rem] items-center gap-3 rounded-full bg-gradient-to-r ${tone(phaseType, status)} px-4 py-2.5 text-white shadow-[0_12px_40px_rgba(0,0,0,0.35)]`}
-          >
-            <span className="h-2 w-2 shrink-0 rounded-full bg-white/90 shadow-[0_0_10px_rgba(255,255,255,0.8)]" />
+          <div className="flex min-w-[13rem] items-center gap-3 rounded-full border border-white/10 bg-black/90 px-4 py-2.5 text-white shadow-[0_12px_40px_rgba(0,0,0,0.45)] backdrop-blur-md">
+            <span
+              className={`h-2 w-2 shrink-0 rounded-full ${toneDot(phaseType, status)}`}
+            />
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[10px] tracking-[0.18em] uppercase opacity-80">
+              <p className="truncate text-[10px] tracking-[0.18em] uppercase text-white/65">
                 {label} · R{currentRound}/{totalRounds}
               </p>
               <p className="tabular font-display text-lg leading-none">

@@ -13,7 +13,7 @@ export function useAudio(
   coldType: 'plunge' | 'shower',
 ) {
   useEffect(() => {
-    setDuckMusicEnabled(audioSettings.duckMusic !== false)
+    setDuckMusicEnabled(!!audioSettings.duckMusic)
   }, [audioSettings.duckMusic])
 
   const playPhaseChangeSound = useCallback(

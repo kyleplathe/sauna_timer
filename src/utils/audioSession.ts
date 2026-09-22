@@ -10,10 +10,11 @@ type AudioSessionNavigator = Navigator & {
 let idleMode: IdleAudioMode = 'auto'
 
 /**
- * Prefer ducking background music for short cues instead of pausing it.
- * Falls back silently when the Audio Session API is unavailable.
+ * Set how our cues interact with Spotify / Apple Music.
+ * Default to ambient (mix). Transient often pauses other apps on iOS
+ * even though the spec says it should only duck.
  */
-export function prepareCueAudio(mode: CueAudioMode = 'transient'): void {
+export function prepareCueAudio(mode: CueAudioMode = 'ambient'): void {
   const session = (navigator as AudioSessionNavigator).audioSession
   if (!session) return
   try {
@@ -24,8 +25,7 @@ export function prepareCueAudio(mode: CueAudioMode = 'transient'): void {
 }
 
 /**
- * What to restore after a ducked cue ends.
- * Lock-screen keepalive uses ambient so music keeps mixing under Now Playing.
+ * Idle / keepalive session type. Prefer ambient so music keeps playing.
  */
 export function setIdleAudioMode(mode: IdleAudioMode): void {
   idleMode = mode
@@ -46,7 +46,7 @@ export function releaseCueAudio(): void {
   const session = (navigator as AudioSessionNavigator).audioSession
   if (!session) return
   try {
-    session.type = idleMode
+    session.type = idleMode === 'auto' ? 'ambient' : idleMode
   } catch {
     // ignore
   }

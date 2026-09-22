@@ -4,14 +4,16 @@ import type { AppSettings, Program, Session, SessionStats } from '../types/timer
 const SESSIONS_KEY = 'sauna_sessions'
 const CUSTOM_PROGRAMS_KEY = 'sauna_custom_programs'
 const SETTINGS_KEY = 'sauna_settings'
+/** One-time flip away from settings that pause Spotify during cues. */
+const AUDIO_MIX_MIGRATION_KEY = 'sauna_audio_mix_v2'
 
 export const DEFAULT_SETTINGS: AppSettings = {
   audio: {
     enabled: true,
-    voiceGuidance: true,
+    voiceGuidance: false,
     warnings: true,
-    volume: 0.7,
-    duckMusic: true,
+    volume: 0.85,
+    duckMusic: false,
   },
   darkMode: true,
   handsFreeModeEnabled: true,
@@ -20,8 +22,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   temperatureUnit: 'F',
   disclaimerAccepted: false,
   practiceDismissed: false,
-  keepScreenAwake: false,
-  lockScreenLive: true,
+  keepScreenAwake: true,
+  lockScreenLive: false,
 }
 
 function readJson<T>(key: string, fallback: T): T {
@@ -38,6 +40,33 @@ function writeJson(key: string, value: unknown): void {
   localStorage.setItem(key, JSON.stringify(value))
 }
 
+function loadSettings(): AppSettings {
+  const stored = readJson<Partial<AppSettings>>(SETTINGS_KEY, {})
+  const merged: AppSettings = {
+    ...DEFAULT_SETTINGS,
+    ...stored,
+    audio: {
+      ...DEFAULT_SETTINGS.audio,
+      ...stored.audio,
+    },
+  }
+
+  // Existing installs still had duck+voice on, which pauses Spotify on iPhone.
+  if (localStorage.getItem(AUDIO_MIX_MIGRATION_KEY) !== '1') {
+    merged.audio = {
+      ...merged.audio,
+      duckMusic: false,
+      voiceGuidance: false,
+    }
+    merged.keepScreenAwake = true
+    merged.lockScreenLive = false
+    writeJson(SETTINGS_KEY, merged)
+    localStorage.setItem(AUDIO_MIX_MIGRATION_KEY, '1')
+  }
+
+  return merged
+}
+
 function startOfDay(timestamp: number): number {
   const date = new Date(timestamp)
   date.setHours(0, 0, 0, 0)
@@ -51,14 +80,7 @@ export function useSessionStorage() {
   const [customPrograms, setCustomPrograms] = useState<Program[]>(() =>
     readJson<Program[]>(CUSTOM_PROGRAMS_KEY, []),
   )
-  const [settings, setSettings] = useState<AppSettings>(() => ({
-    ...DEFAULT_SETTINGS,
-    ...readJson<Partial<AppSettings>>(SETTINGS_KEY, {}),
-    audio: {
-      ...DEFAULT_SETTINGS.audio,
-      ...readJson<Partial<AppSettings>>(SETTINGS_KEY, {}).audio,
-    },
-  }))
+  const [settings, setSettings] = useState<AppSettings>(() => loadSettings())
 
   const saveSession = useCallback((session: Session) => {
     setSessions((prev) => {

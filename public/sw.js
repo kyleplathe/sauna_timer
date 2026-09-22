@@ -1,6 +1,6 @@
-/* Ember & Ice — lock-screen + background phase alarms (v4) */
+/* Ember & Ice — ambient music mix + awake-screen defaults (v5) */
 const LIVE_TAG = 'ember-ice-live-timer'
-const SW_VERSION = 'ember-ice-sw-v4'
+const SW_VERSION = 'ember-ice-sw-v5'
 
 self.addEventListener('install', (event) => {
   event.waitUntil(

@@ -161,7 +161,7 @@ function App() {
     status: timer.state.status,
     programName: selectedProgram?.name ?? 'Sauna Timer',
     keepScreenAwake: !!settings.keepScreenAwake,
-    lockScreenLive: settings.lockScreenLive !== false,
+    lockScreenLive: !!settings.lockScreenLive,
   })
 
   useEffect(() => {
@@ -203,7 +203,7 @@ function App() {
       id: `session-${Date.now()}`,
       startedAt: Date.now(),
     }
-    if (settings.lockScreenLive !== false) {
+    if (settings.lockScreenLive) {
       void requestLockScreenPermission()
     }
     timer.start()

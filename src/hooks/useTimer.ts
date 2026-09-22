@@ -15,6 +15,7 @@ import {
   type EngineState,
 } from '../utils/timerEngine'
 import { setSessionHeartbeat } from '../utils/scheduledAlarm'
+import { wallClockTickDelta } from '../utils/wallClockTick'
 
 interface UseTimerArgs {
   program: Program | null
@@ -63,9 +64,12 @@ export function useTimer({
       endsAtRef.current = { key, at: Date.now() + current.remainingMs }
     }
 
-    const remaining = Math.max(0, endsAtRef.current.at - Date.now())
-    const delta = current.remainingMs - remaining
-    if (delta < 80) return
+    const delta = wallClockTickDelta(
+      current.remainingMs,
+      endsAtRef.current.at,
+      Date.now(),
+    )
+    if (delta == null) return
 
     const currentProgram = programRef.current
     if (!currentProgram) return
@@ -96,14 +100,17 @@ export function useTimer({
       return
     }
 
-    endsAtRef.current = {
-      key: phaseKey(stateRef.current),
-      at: Date.now() + stateRef.current.remainingMs,
+    const key = phaseKey(stateRef.current)
+    if (!endsAtRef.current || endsAtRef.current.key !== key) {
+      endsAtRef.current = {
+        key,
+        at: Date.now() + stateRef.current.remainingMs,
+      }
     }
 
     const id = window.setInterval(() => {
       syncFromWallClock()
-    }, 250)
+    }, 100)
 
     const onVisibility = () => {
       if (document.visibilityState === 'visible') syncFromWallClock()

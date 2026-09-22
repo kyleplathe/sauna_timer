@@ -36,9 +36,11 @@ self.addEventListener('message', (event) => {
 
   if (data.type === 'live-timer-update') {
     event.waitUntil(
+      // Same tag + renotify:false replaces quietly — never spam a new alert per tick.
       self.registration.showNotification(data.title || 'Ember & Ice', {
         body: data.body || '',
         tag: LIVE_TAG,
+        renotify: false,
         silent: true,
         requireInteraction: true,
         badge: './favicon.svg',

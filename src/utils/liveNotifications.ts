@@ -38,6 +38,7 @@ export async function postLiveTimerNotification(payload: {
   await registration.showNotification(payload.title, {
     body: payload.body,
     tag: 'ember-ice-live-timer',
+    renotify: false,
     silent: true,
     requireInteraction: true,
   } as NotificationOptions)

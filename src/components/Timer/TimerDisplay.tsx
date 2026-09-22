@@ -63,7 +63,7 @@ export function TimerDisplay({
 
   if (isIdle) {
     return (
-      <div className={`flex min-h-dvh flex-col items-center justify-center bg-gradient-to-br ${atmosphere} px-6`}>
+      <div className={`timer-screen-idle flex flex-col items-center justify-center bg-gradient-to-br ${atmosphere}`}>
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -96,7 +96,7 @@ export function TimerDisplay({
 
   return (
     <motion.div
-      className={`flex min-h-dvh flex-col items-center justify-between bg-gradient-to-br ${atmosphere} px-5 py-8`}
+      className={`timer-screen flex flex-col items-center justify-between bg-gradient-to-br ${atmosphere}`}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
     >

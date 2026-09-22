@@ -21,6 +21,12 @@ body,
 #root {
   min-height: 100%;
   min-height: 100dvh;
+  min-height: 100svh;
+}
+
+html {
+  /* Stop iOS rubber-band from yanking the sticky header under the status icons. */
+  overscroll-behavior-y: none;
 }
 
 body {
@@ -28,6 +34,9 @@ body {
   font-family: var(--font-sans);
   background: #f6efe6;
   color: #1c1410;
+  overscroll-behavior-y: none;
+  /* Keep the home-screen app painted under the translucent status bar. */
+  background-color: #f6efe6;
 }
 
 .dark body {
@@ -37,6 +46,7 @@ body {
 
 #root {
   min-height: 100dvh;
+  min-height: 100svh;
 }
 
 .tabular {
@@ -45,4 +55,44 @@ body {
 
 .timer-glow {
   text-shadow: 0 0 40px color-mix(in srgb, currentColor 35%, transparent);
+}
+
+/* iOS Add-to-Home-Screen: content must clear the status bar / Dynamic Island. */
+.app-shell {
+  min-height: 100dvh;
+  min-height: 100svh;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+.app-header {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.timer-screen {
+  box-sizing: border-box;
+  min-height: 100dvh;
+  min-height: 100svh;
+  padding-top: max(2rem, calc(env(safe-area-inset-top, 0px) + 0.75rem));
+  padding-bottom: max(2rem, calc(env(safe-area-inset-bottom, 0px) + 1rem));
+  padding-left: max(1.25rem, env(safe-area-inset-left, 0px));
+  padding-right: max(1.25rem, env(safe-area-inset-right, 0px));
+}
+
+.timer-screen-idle {
+  box-sizing: border-box;
+  min-height: 100dvh;
+  min-height: 100svh;
+  padding-top: max(1.5rem, env(safe-area-inset-top, 0px));
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px));
+  padding-left: max(1.5rem, env(safe-area-inset-left, 0px));
+  padding-right: max(1.5rem, env(safe-area-inset-right, 0px));
+}
+
+@media all and (display-mode: standalone) {
+  .app-header {
+    /* Extra air under Dynamic Island / status icons on installed PWAs. */
+    padding-top: max(env(safe-area-inset-top, 0px), 2.75rem);
+  }
 }

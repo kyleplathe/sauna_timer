@@ -47,7 +47,7 @@ export function LiveActivityIsland({
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -14, scale: 0.94 }}
           transition={{ type: 'spring', stiffness: 420, damping: 28 }}
-          className="pointer-events-none fixed top-[max(0.75rem,env(safe-area-inset-top))] left-1/2 z-50 -translate-x-1/2"
+          className="pointer-events-none fixed top-[max(0.75rem,calc(env(safe-area-inset-top,0px)+0.5rem))] left-1/2 z-50 -translate-x-1/2"
           aria-live="polite"
         >
           <div

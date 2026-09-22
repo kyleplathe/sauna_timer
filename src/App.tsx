@@ -191,7 +191,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-dvh bg-[#f6efe6] text-stone-900 transition-colors dark:bg-[#0c0a09] dark:text-stone-100">
+    <div className="app-shell bg-[#f6efe6] text-stone-900 transition-colors dark:bg-[#0c0a09] dark:text-stone-100">
       {liveActive && currentPhase && selectedProgram && (
         <LiveActivityIsland
           visible
@@ -205,7 +205,7 @@ function App() {
       )}
 
       {view !== 'timer' && (
-        <header className="sticky top-0 z-20 border-b border-stone-200/70 bg-[#f6efe6]/90 backdrop-blur dark:border-stone-800 dark:bg-[#0c0a09]/90">
+        <header className="app-header sticky top-0 z-20 border-b border-stone-200/70 bg-[#f6efe6]/90 backdrop-blur dark:border-stone-800 dark:bg-[#0c0a09]/90">
           <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
             <button onClick={() => setView('home')} className="text-left">
               <p className="text-xs tracking-[0.35em] text-orange-600 uppercase">
@@ -367,7 +367,7 @@ function App() {
       </AnimatePresence>
 
       {!settings.disclaimerAccepted && view !== 'timer' && (
-        <div className="fixed inset-0 z-40 flex items-end bg-black/50 p-4 sm:items-center">
+        <div className="fixed inset-0 z-40 flex items-end bg-black/50 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:items-center">
           <div className="mx-auto max-w-lg rounded-3xl bg-white p-6 dark:bg-stone-900">
             <h3 className="font-display text-2xl">Not medical advice</h3>
             <p className="mt-3 text-sm text-stone-600 dark:text-stone-300">

@@ -61,4 +61,8 @@ export interface AppSettings {
   disclaimerAccepted: boolean
   /** Hide the Dry run demo protocol card until restored from Settings. */
   practiceDismissed: boolean
+  /** Keep the display awake during a session (prevents lock-screen live view). */
+  keepScreenAwake: boolean
+  /** Update a lock-screen / notification live timer while a session runs. */
+  lockScreenLive: boolean
 }

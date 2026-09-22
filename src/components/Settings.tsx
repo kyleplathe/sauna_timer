@@ -106,6 +106,29 @@ export function Settings({ settings, onUpdate }: SettingsProps) {
       </section>
 
       <section className="space-y-4 rounded-3xl bg-white p-6 shadow-sm dark:bg-stone-900">
+        <h3 className="text-xl font-semibold">Lock screen</h3>
+        <p className="text-sm text-stone-500">
+          Web apps cannot draw a real Dynamic Island Live Activity. Instead we
+          keep a live notification / Now Playing countdown on the lock screen
+          while a session runs (best on installed home-screen apps).
+        </p>
+        <Toggle
+          label="Live lock-screen timer"
+          checked={settings.lockScreenLive !== false}
+          onChange={(lockScreenLive) => onUpdate({ lockScreenLive })}
+        />
+        <Toggle
+          label="Keep screen awake"
+          checked={!!settings.keepScreenAwake}
+          onChange={(keepScreenAwake) => onUpdate({ keepScreenAwake })}
+        />
+        <p className="text-sm text-stone-500">
+          Leave screen-awake off if you want the phone to lock and show the live
+          timer on the lock screen.
+        </p>
+      </section>
+
+      <section className="space-y-4 rounded-3xl bg-white p-6 shadow-sm dark:bg-stone-900">
         <h3 className="text-xl font-semibold">Preferences</h3>
         <Toggle
           label="Dark mode"

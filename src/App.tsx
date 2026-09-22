@@ -16,6 +16,7 @@ import { useSessionStorage } from './hooks/useSessionStorage'
 import { useTimer } from './hooks/useTimer'
 import type { Program, Session } from './types/timer'
 import { downloadHealthData } from './utils/healthExport'
+import { requestLockScreenPermission } from './utils/liveNotifications'
 import { phaseLabel, PRESET_PROGRAMS } from './utils/protocols'
 import type { EngineEvent } from './utils/timerEngine'
 
@@ -128,13 +129,15 @@ function App() {
     timer.state.status !== 'idle' &&
     timer.state.status !== 'complete'
 
-  useLiveActivity({
+  const { showInAppIsland } = useLiveActivity({
     active: liveActive,
     phaseType: currentPhase?.type ?? null,
     coldType: selectedProgram?.coldType ?? settings.preferredColdType,
     remainingMs: timer.state.remainingMs,
     status: timer.state.status,
     programName: selectedProgram?.name ?? 'Sauna Timer',
+    keepScreenAwake: !!settings.keepScreenAwake,
+    lockScreenLive: settings.lockScreenLive !== false,
   })
 
   useEffect(() => {
@@ -176,6 +179,9 @@ function App() {
       id: `session-${Date.now()}`,
       startedAt: Date.now(),
     }
+    if (settings.lockScreenLive !== false) {
+      void requestLockScreenPermission()
+    }
     timer.start()
   }
 
@@ -192,7 +198,7 @@ function App() {
 
   return (
     <div className="app-shell bg-[#f6efe6] text-stone-900 transition-colors dark:bg-[#0c0a09] dark:text-stone-100">
-      {liveActive && currentPhase && selectedProgram && (
+      {showInAppIsland && currentPhase && selectedProgram && (
         <LiveActivityIsland
           visible
           phaseType={currentPhase.type}

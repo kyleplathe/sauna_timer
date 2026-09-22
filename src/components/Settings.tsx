@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import type { AppSettings } from '../types/timer'
 import { requestLockScreenPermission } from '../utils/liveNotifications'
@@ -8,13 +8,26 @@ interface SettingsProps {
   onUpdate: (settings: Partial<AppSettings>) => void
 }
 
+function readNotifyStatus(): NotificationPermission | 'unsupported' {
+  if (typeof Notification === 'undefined') return 'unsupported'
+  return Notification.permission
+}
+
 export function Settings({ settings, onUpdate }: SettingsProps) {
   const [notifyStatus, setNotifyStatus] = useState<NotificationPermission | 'unsupported'>(
-    () =>
-      typeof Notification === 'undefined'
-        ? 'unsupported'
-        : Notification.permission,
+    readNotifyStatus,
   )
+
+  useEffect(() => {
+    setNotifyStatus(readNotifyStatus())
+    const onFocus = () => setNotifyStatus(readNotifyStatus())
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onFocus)
+    return () => {
+      window.removeEventListener('focus', onFocus)
+      document.removeEventListener('visibilitychange', onFocus)
+    }
+  }, [])
 
   const allowNotifications = async () => {
     const result = await requestLockScreenPermission()

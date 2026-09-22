@@ -1,12 +1,15 @@
 import type { PhaseType } from '../types/timer'
-import { prepareCueAudio, releaseCueAudio } from './audioSession'
+import { prepareCueAudio, releaseCueAudio, setIdleAudioMode } from './audioSession'
 
 let audioContext: AudioContext | null = null
 let releaseCueTimer: ReturnType<typeof setTimeout> | null = null
-let duckMusicEnabled = true
+/** When true, briefly use transient (may pause Spotify on iOS). Default off. */
+let interruptMusicEnabled = false
 
 export function setDuckMusicEnabled(enabled: boolean): void {
-  duckMusicEnabled = enabled
+  // Setting name is historical ("duck"); on iOS transient often pauses music,
+  // so this is now an explicit opt-in to interrupt/duck other audio.
+  interruptMusicEnabled = enabled
 }
 
 function getAudioContext(): AudioContext {
@@ -24,9 +27,10 @@ function scheduleCueRelease(holdMs: number): void {
   }, holdMs)
 }
 
-/** Prefer ducking background music for short timer cues — never exclusive playback. */
-function withDuckedCue(durationMs: number, play: () => void): void {
-  prepareCueAudio(duckMusicEnabled ? 'transient' : 'ambient')
+/** Play a short cue while keeping Spotify/Apple Music mixing (ambient). */
+function withMixedCue(durationMs: number, play: () => void): void {
+  setIdleAudioMode('ambient')
+  prepareCueAudio(interruptMusicEnabled ? 'transient' : 'ambient')
   play()
   scheduleCueRelease(Math.max(250, durationMs + 120))
 }
@@ -36,7 +40,7 @@ export function playBeep(
   duration = 0.2,
   volume = 0.3,
 ): void {
-  withDuckedCue(duration * 1000, () => {
+  withMixedCue(duration * 1000, () => {
     const ctx = getAudioContext()
     void ctx.resume()
     const oscillator = ctx.createOscillator()
@@ -79,8 +83,10 @@ export function playCompletionSound(volume = 0.3): void {
 
 export function speak(text: string, volume = 1): void {
   if (!('speechSynthesis' in window)) return
-  // Prefer ducking music under voice cues instead of pausing Spotify/Apple Music.
-  prepareCueAudio(duckMusicEnabled ? 'transient' : 'ambient')
+  // Speech Synthesis often pauses music on iOS regardless of session type.
+  // Still force ambient first so we do not make it worse.
+  setIdleAudioMode('ambient')
+  prepareCueAudio(interruptMusicEnabled ? 'transient' : 'ambient')
   const utterance = new SpeechSynthesisUtterance(text)
   utterance.volume = volume
   utterance.rate = 1

@@ -46,6 +46,10 @@ export function Settings({ settings, onUpdate }: SettingsProps) {
             onUpdate({ audio: { ...settings.audio, voiceGuidance } })
           }
         />
+        <p className="text-sm text-stone-500">
+          Voice often pauses Spotify/Apple Music on iPhone. Leave it off and use
+          beeps if you want music uninterrupted.
+        </p>
         <Toggle
           label="Countdown warnings"
           checked={settings.audio.warnings}
@@ -55,16 +59,16 @@ export function Settings({ settings, onUpdate }: SettingsProps) {
           }
         />
         <Toggle
-          label="Duck music during cues"
-          checked={settings.audio.duckMusic !== false}
+          label="Pause music for louder alerts"
+          checked={!!settings.audio.duckMusic}
           disabled={!settings.audio.enabled}
           onChange={(duckMusic) =>
             onUpdate({ audio: { ...settings.audio, duckMusic } })
           }
         />
         <p className="text-sm text-stone-500">
-          Lowers (does not stop) background music while beeps and voice cues play,
-          when the browser supports it.
+          Off (recommended): alerts mix over your music. On: may pause Spotify
+          briefly so beeps are clearer.
         </p>
         <label className="block">
           <span className="mb-2 block text-sm text-stone-500">
@@ -120,40 +124,38 @@ export function Settings({ settings, onUpdate }: SettingsProps) {
       </section>
 
       <section className="space-y-4 rounded-3xl bg-white p-6 shadow-sm dark:bg-stone-900">
-        <h3 className="text-xl font-semibold">Lock screen</h3>
+        <h3 className="text-xl font-semibold">Screen & lock</h3>
         <p className="text-sm text-stone-500">
-          Web apps cannot draw a real Dynamic Island. During a session we keep a
-          quiet background audio heartbeat so phase-end alarms can still sound
-          while the phone is locked, duck music briefly for cues (instead of
-          stopping Spotify/Apple Music), and optionally show a sticky
-          notification / Now Playing countdown.
+          Keep the screen awake during a session so phase-end alarms stay
+          reliable and Spotify/Apple Music keep playing. Lock-screen Live
+          Activities are not available to web apps.
         </p>
-        <Toggle
-          label="Live lock-screen timer"
-          checked={settings.lockScreenLive !== false}
-          onChange={(lockScreenLive) => onUpdate({ lockScreenLive })}
-        />
         <Toggle
           label="Keep screen awake"
           checked={!!settings.keepScreenAwake}
           onChange={(keepScreenAwake) => onUpdate({ keepScreenAwake })}
         />
         <p className="text-sm text-stone-500">
-          Leave screen-awake off if you want the phone to lock and show the live
-          timer on the lock screen.
+          Recommended on for sauna use. Alerts mix over your music; turn off
+          voice guidance if music still pauses.
         </p>
+        <Toggle
+          label="Sticky lock-screen notification"
+          checked={!!settings.lockScreenLive}
+          onChange={(lockScreenLive) => onUpdate({ lockScreenLive })}
+        />
         {notifyStatus !== 'unsupported' && (
           <button
             type="button"
             onClick={() => void allowNotifications()}
-            disabled={notifyStatus === 'granted'}
+            disabled={notifyStatus === 'granted' || !settings.lockScreenLive}
             className="w-full rounded-xl bg-stone-900 py-3 text-white disabled:opacity-50 dark:bg-stone-100 dark:text-stone-900"
           >
             {notifyStatus === 'granted'
               ? 'Notifications allowed'
               : notifyStatus === 'denied'
                 ? 'Notifications blocked — enable in system Settings'
-                : 'Allow lock-screen notifications'}
+                : 'Allow notifications'}
           </button>
         )}
       </section>

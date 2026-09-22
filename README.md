@@ -11,9 +11,9 @@ Heat first. Cold second. End on cold. Hands-free walk timers so you do not have 
 - Cold **shower** and cold **plunge** variants (defaults to shower)
 - Custom protocols with save/edit/delete
 - Hands-free mode: alarm at phase end, short walk countdown, auto-start next phase
-- Voice cues and countdown beeps that **duck** background music when the browser allows (instead of stopping it)
-- **Background phase-end alarms** that can still sound while the phone is locked (HTMLAudio keepalive + scheduled alarm)
-- Optional lock-screen sticky notification / Now Playing countdown (no in-app fake Dynamic Island)
+- Voice / beep cues that **mix over** background music by default (optional “pause music for louder alerts”)
+- **Keep screen awake** during sessions (recommended) so phase-end alarms stay reliable without stealing Spotify
+- Optional sticky lock-screen notification (web apps cannot do a real Live Activity)
 - Square social share card of your stats (save as photo or share via the system sheet)
 - Session history, streaks, and CSV export for Apple Health import tools
 - Protocol guide and safety notes
@@ -80,15 +80,15 @@ Do not enable both Workers Builds auto-deploy and this Action, or every push wil
 3. A short alarm plays and a walk countdown starts (default 10 seconds, 5–30s).
 4. The next phase starts on its own.
 
-## Lock-screen / background alarms
+## Sauna session tips
 
-1. Install the timer to your home screen (iOS Share → Add to Home Screen).
-2. Leave **Duck music during cues** on so beeps lower Spotify/Apple Music instead of stopping it.
-3. Leave **Keep screen awake** off if you want the phone to lock.
-4. Start a session, then lock the phone — a quiet audio heartbeat keeps the session alive enough to sound the **phase-end alarm** when it is time to move.
-5. Optional: **Live lock-screen timer** shows a sticky notification / Now Playing countdown (best-effort; not a native Live Activity).
+1. Install the timer to your home screen.
+2. Leave **Keep screen awake** on (default) — most reliable for alarms + music.
+3. Leave **Voice guidance** off if you want Spotify/Apple Music uninterrupted (voice often pauses music on iPhone).
+4. Leave **Pause music for louder alerts** off so beeps mix over your music.
+5. Start music, start a session, and let the phase-end alarm tell you when to move.
 
-Browsers cannot draw a real Dynamic Island Live Activity. The important sauna behavior is the phase-end alarm while locked with music still playing.
+Lock-screen Live Activities are not available to web apps; always-on screen is the practical path.
 
 ## Apple Health
 

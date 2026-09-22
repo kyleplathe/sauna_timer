@@ -17,9 +17,9 @@ interface LiveActivityArgs {
   phaseDurationMs: number
   status: string
   programName: string
-  /** When true, keep the screen on. Leave false so the phone can lock. */
+  /** When true, keep the screen on (preferred for sauna + music). */
   keepScreenAwake: boolean
-  /** Prefer lock-screen notification + Now Playing while a session runs. */
+  /** Optional sticky notification while a session runs. */
   lockScreenLive: boolean
 }
 
@@ -30,36 +30,6 @@ export function liveNotificationKey(
   programName: string,
 ): string {
   return `${status}|${phaseType ?? 'none'}|${programName}`
-}
-
-function setMediaSession(
-  title: string,
-  artist: string,
-  album: string,
-  playbackState: MediaSessionPlaybackState,
-  durationSec: number,
-  positionSec: number,
-): void {
-  if (!('mediaSession' in navigator)) return
-  try {
-    navigator.mediaSession.metadata = new MediaMetadata({
-      title,
-      artist,
-      album,
-    })
-    navigator.mediaSession.playbackState = playbackState
-    if ('setPositionState' in navigator.mediaSession) {
-      const duration = Math.max(durationSec, 0.001)
-      const position = Math.min(Math.max(positionSec, 0), duration)
-      navigator.mediaSession.setPositionState({
-        duration,
-        position,
-        playbackRate: 1,
-      })
-    }
-  } catch {
-    // Media Session is best-effort on web.
-  }
 }
 
 function clearMediaSession(): void {
@@ -76,12 +46,11 @@ function clearMediaSession(): void {
 }
 
 /**
- * Session background support:
- * - HTMLAudio keepalive so phase-end alarms can still fire while locked
- * - Optional sticky notification + Now Playing metadata
- * - Optional wake lock (off by default)
- *
- * Music stays in ambient/mix mode; short cues duck when the browser allows it.
+ * Session support focused on sauna use:
+ * - Keep screen awake (preferred) so timers/alarms stay reliable and Spotify keeps focus
+ * - Only start HTMLAudio keepalive when the screen is allowed to sleep
+ * - Never claim Media Session / Now Playing (that cuts off Spotify)
+ * - Alerts stay ambient so music mixes instead of stopping
  */
 export function useLiveActivity({
   active,
@@ -107,7 +76,7 @@ export function useLiveActivity({
       wakeLockRef.current = null
       stopAudioRef.current?.()
       stopAudioRef.current = null
-      setIdleAudioMode('auto')
+      setIdleAudioMode('ambient')
       clearMediaSession()
       void clearLiveTimerNotification()
       document.title = baseTitleRef.current
@@ -118,10 +87,21 @@ export function useLiveActivity({
     let cancelled = false
 
     const boot = async () => {
-      // Always keep HTMLAudio alive during a session so locked-phone alarms work.
-      if (!cancelled && !stopAudioRef.current) {
-        stopAudioRef.current = startSessionKeepalive()
+      // Keep Spotify in charge of Now Playing — clear any prior claim.
+      clearMediaSession()
+      setIdleAudioMode('ambient')
+
+      // HTMLAudio keepalive steals music focus on many phones. Only use it when
+      // the screen is allowed to sleep (background / locked path).
+      if (!keepScreenAwake) {
+        if (!cancelled && !stopAudioRef.current) {
+          stopAudioRef.current = startSessionKeepalive()
+        }
+      } else {
+        stopAudioRef.current?.()
+        stopAudioRef.current = null
       }
+
       if (lockScreenLive) {
         await requestLockScreenPermission()
       }
@@ -131,7 +111,7 @@ export function useLiveActivity({
     return () => {
       cancelled = true
     }
-  }, [active, lockScreenLive])
+  }, [active, lockScreenLive, keepScreenAwake])
 
   useEffect(() => {
     if (!active || !keepScreenAwake) {
@@ -185,13 +165,9 @@ export function useLiveActivity({
           : phaseLabel(phaseType, coldType)
     const clock = formatClock(remainingMs / 1000)
     const title = `${clock} · ${label}`
-    const durationSec = Math.max(phaseDurationMs, remainingMs) / 1000
-    const positionSec = Math.max(0, durationSec - remainingMs / 1000)
-    const playbackState: MediaSessionPlaybackState =
-      status === 'paused' ? 'paused' : 'playing'
 
     document.title = title
-    setMediaSession(title, programName, 'Ember & Ice', playbackState, durationSec, positionSec)
+    // Do not touch Media Session — leaving it alone keeps Spotify on the lock screen.
 
     if (lockScreenLive) {
       const key = liveNotificationKey(phaseType, status, programName)
@@ -199,7 +175,7 @@ export function useLiveActivity({
         lastNotifyKeyRef.current = key
         void postLiveTimerNotification({
           title: `${label} · ${programName}`,
-          body: `${clock} left · alarm will sound when this phase ends`,
+          body: `${clock} left · phase-end alarm is armed`,
         })
       }
     }
@@ -218,7 +194,7 @@ export function useLiveActivity({
     return () => {
       stopAudioRef.current?.()
       stopAudioRef.current = null
-      setIdleAudioMode('auto')
+      setIdleAudioMode('ambient')
       void clearLiveTimerNotification()
       clearMediaSession()
     }

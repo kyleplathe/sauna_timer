@@ -30,11 +30,11 @@ function ensureAlarmElement(): HTMLAudioElement {
   return alarmAudio
 }
 
-/** Play the phase-end alarm now (ducks music briefly when supported). */
+/** Play the phase-end alarm now — ambient mix so music keeps playing. */
 export function playPhaseEndAlarm(volume = alarmVolume): void {
   alarmVolume = volume
   setIdleAudioMode('ambient')
-  prepareCueAudio('transient')
+  prepareCueAudio('ambient')
   const audio = ensureAlarmElement()
   audio.volume = Math.min(1, Math.max(0.05, volume))
   audio.currentTime = 0
@@ -84,8 +84,8 @@ export function checkScheduledPhaseEndAlarm(): void {
 }
 
 /**
- * Near-silent looping HTMLAudio — keeps the PWA alive enough for alarms while
- * locked, and prefers ambient mixing so Spotify/Apple Music keep playing.
+ * Near-silent looping HTMLAudio — only for locked-phone sessions.
+ * Prefer ambient mixing. Does not claim Media Session (that steals Spotify).
  */
 export function startSessionKeepalive(): () => void {
   setIdleAudioMode('ambient')
@@ -94,7 +94,7 @@ export function startSessionKeepalive(): () => void {
   const audio = new Audio(KEEPALIVE_SRC)
   keepaliveAudio = audio
   audio.loop = true
-  audio.volume = 0.02
+  audio.volume = 0.015
   audio.setAttribute('playsinline', 'true')
   void audio.play().catch(() => undefined)
 
@@ -103,24 +103,7 @@ export function startSessionKeepalive(): () => void {
     pulse()
   }
   audio.addEventListener('timeupdate', onTick)
-  // Extra belt-and-suspenders while backgrounded.
   const id = globalThis.setInterval(onTick, 1000)
-
-  if ('mediaSession' in navigator) {
-    try {
-      navigator.mediaSession.setActionHandler('play', () => {
-        void audio.play().catch(() => undefined)
-        navigator.mediaSession.playbackState = 'playing'
-      })
-      navigator.mediaSession.setActionHandler('pause', () => {
-        // Do not actually pause keepalive — user needs alarms in the sauna.
-        void audio.play().catch(() => undefined)
-        navigator.mediaSession.playbackState = 'playing'
-      })
-    } catch {
-      // optional
-    }
-  }
 
   return () => {
     globalThis.clearInterval(id)
@@ -133,14 +116,6 @@ export function startSessionKeepalive(): () => void {
       // ignore
     }
     if (keepaliveAudio === audio) keepaliveAudio = null
-    if ('mediaSession' in navigator) {
-      try {
-        navigator.mediaSession.setActionHandler('play', null)
-        navigator.mediaSession.setActionHandler('pause', null)
-      } catch {
-        // ignore
-      }
-    }
-    setIdleAudioMode('auto')
+    setIdleAudioMode('ambient')
   }
 }

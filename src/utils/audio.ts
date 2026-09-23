@@ -83,7 +83,7 @@ export function playCountdownTick(secondsRemaining: number, volume = 0.3): void 
   // Pitch rises toward zero so each second is distinct under music.
   const frequency = 480 + (5 - clamped) * 90
   const duration = clamped === 1 ? 0.28 : 0.12
-  const level = volume * (clamped === 1 ? 0.95 : 0.75)
+  const level = volume * (clamped === 1 ? 1.2 : 1.0)
   playBeep(frequency, duration, level)
 }
 

@@ -4,14 +4,14 @@ export const PRESET_PROGRAMS: Program[] = [
   {
     id: 'practice',
     name: 'Dry run',
-    description: 'A one-minute walkthrough so you can learn the flow before heat and ice.',
-    rounds: 2,
+    description:
+      'Quick demo: one short heat, one cold shower, then you are done.',
+    rounds: 1,
     coldType: 'shower',
     isPreset: true,
     phases: [
-      { type: 'sauna', duration: 20, temperature: { value: 70, unit: 'C' } },
+      { type: 'sauna', duration: 15, temperature: { value: 70, unit: 'C' } },
       { type: 'cold', duration: 10, temperature: { value: 15, unit: 'C' } },
-      { type: 'rest', duration: 8 },
     ],
   },
   {

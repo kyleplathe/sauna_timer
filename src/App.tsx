@@ -92,6 +92,12 @@ function App() {
   persistRef.current = persistSession
   const timerRef = useRef<ReturnType<typeof useTimer> | null>(null)
 
+  // Keep the dry-run demo snappy so it clearly ends after one heat + cold.
+  const transitionSeconds =
+    selectedProgram?.id === 'practice'
+      ? Math.min(5, settings.handsFreeTransitionDuration)
+      : settings.handsFreeTransitionDuration
+
   const handleEvent = useCallback((event: EngineEvent) => {
     const volume = settings.audio.volume
     if (event.type === 'phaseStart') {
@@ -112,10 +118,7 @@ function App() {
         ),
       )
       if (settings.audio.enabled) {
-        schedulePhaseEndAlarm(
-          settings.handsFreeTransitionDuration * 1000,
-          volume,
-        )
+        schedulePhaseEndAlarm(transitionSeconds * 1000, volume)
       }
     }
     if (event.type === 'phaseEnd') {
@@ -133,13 +136,13 @@ function App() {
     selectedProgram?.coldType,
     settings.audio.enabled,
     settings.audio.volume,
-    settings.handsFreeTransitionDuration,
+    transitionSeconds,
   ])
 
   const timer = useTimer({
     program: selectedProgram,
     handsFree: settings.handsFreeModeEnabled,
-    transitionSeconds: settings.handsFreeTransitionDuration,
+    transitionSeconds,
     onEvent: handleEvent,
   })
   timerRef.current = timer

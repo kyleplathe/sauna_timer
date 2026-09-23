@@ -104,4 +104,23 @@ describe('timer engine', () => {
     expect(last.state.status).toBe('complete')
     expect(last.events.some((event) => event.type === 'complete')).toBe(true)
   })
+
+  it('completes the dry-run demo after one heat and one cold', async () => {
+    const { PRESET_PROGRAMS } = await import('./protocols')
+    const practice = PRESET_PROGRAMS.find((item) => item.id === 'practice')
+    expect(practice).toBeTruthy()
+    expect(practice!.rounds).toBe(1)
+    expect(totalPhases(practice!)).toBe(2)
+
+    const options = { handsFree: true, transitionSeconds: 5 }
+    let { state } = startSession(practice!)
+    ;({ state } = tick(state, practice!, practice!.phases[0].duration * 1000, options))
+    expect(state.status).toBe('transition')
+    ;({ state } = tick(state, practice!, state.remainingMs, options))
+    expect(state.status).toBe('running')
+    expect(practice!.phases[state.phaseIndex].type).toBe('cold')
+    const done = tick(state, practice!, practice!.phases[1].duration * 1000, options)
+    expect(done.state.status).toBe('complete')
+    expect(done.events.some((event) => event.type === 'complete')).toBe(true)
+  })
 })

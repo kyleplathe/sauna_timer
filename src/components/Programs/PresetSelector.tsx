@@ -76,7 +76,7 @@ export function PresetSelector({
             <p className="mb-4 text-sm text-white/90">{program.description}</p>
             <div className="flex flex-wrap gap-2 text-xs">
               <span className="rounded-full bg-white/15 px-3 py-1">
-                {program.rounds} rounds
+                {program.rounds} {program.rounds === 1 ? 'round' : 'rounds'}
               </span>
               {program.phases.map((phase, phaseIndex) => (
                 <span

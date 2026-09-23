@@ -58,6 +58,9 @@ export function Settings({ settings, onUpdate }: SettingsProps) {
             onUpdate({ audio: { ...settings.audio, warnings } })
           }
         />
+        <p className="text-sm text-stone-500">
+          Beeps at 30s and 10s, then a rising tone each second for the last 5.
+        </p>
         <Toggle
           label="Pause music for louder alerts"
           checked={!!settings.audio.duckMusic}

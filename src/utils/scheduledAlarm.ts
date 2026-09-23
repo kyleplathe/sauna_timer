@@ -1,3 +1,4 @@
+import { playChime, unlockWebAudio } from './audio'
 import { prepareCueAudio, setIdleAudioMode } from './audioSession'
 
 const ALARM_SRC = `${import.meta.env.BASE_URL}phase-end-alarm.wav`
@@ -30,6 +31,33 @@ function ensureAlarmElement(): HTMLAudioElement {
   return alarmAudio
 }
 
+/**
+ * Call from Start / Resume (user gesture).
+ * After keep-screen-awake became default, we no longer start HTMLAudio
+ * keepalive — without this unlock, deferred phase-end play() is blocked.
+ */
+export function unlockSessionAudio(): void {
+  setIdleAudioMode('ambient')
+  prepareCueAudio('ambient')
+  unlockWebAudio()
+
+  const audio = ensureAlarmElement()
+  // Do not call load() here — that resets gesture unlock on iOS.
+  const previousVolume = audio.volume
+  audio.volume = 0.001
+  audio.currentTime = 0
+  void audio
+    .play()
+    .then(() => {
+      audio.pause()
+      audio.currentTime = 0
+      audio.volume = previousVolume
+    })
+    .catch(() => {
+      audio.volume = previousVolume
+    })
+}
+
 /** Play the phase-end alarm now — ambient mix so music keeps playing. */
 export function playPhaseEndAlarm(volume = alarmVolume): void {
   alarmVolume = volume
@@ -38,7 +66,10 @@ export function playPhaseEndAlarm(volume = alarmVolume): void {
   const audio = ensureAlarmElement()
   audio.volume = Math.min(1, Math.max(0.05, volume))
   audio.currentTime = 0
-  void audio.play().catch(() => undefined)
+  void audio.play().catch(() => {
+    // HTMLAudio blocked (no gesture unlock) — still give an audible cue.
+    playChime(volume)
+  })
   globalThis.setTimeout(() => setIdleAudioMode('ambient'), 1600)
 }
 
@@ -66,8 +97,8 @@ export function schedulePhaseEndAlarm(
   }
   alarmVolume = volume
   alarmEndsAt = Date.now() + remainingMs
-  // Warm the element so play() is allowed later without a fresh gesture.
-  void ensureAlarmElement().load()
+  // Keep the already-unlocked element; never load() (resets iOS unlock).
+  void ensureAlarmElement()
   alarmTimer = setTimeout(() => {
     alarmTimer = null
     alarmEndsAt = null

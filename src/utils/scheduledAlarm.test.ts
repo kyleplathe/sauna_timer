@@ -69,4 +69,57 @@ describe('scheduledAlarm', () => {
     await vi.advanceTimersByTimeAsync(4_000)
     expect(play).not.toHaveBeenCalled()
   })
+
+  it('unlockSessionAudio primes HTMLAudio without calling load()', async () => {
+    const play = vi.fn(async () => undefined)
+    const load = vi.fn()
+    const pause = vi.fn()
+    vi.stubGlobal(
+      'Audio',
+      class {
+        volume = 1
+        currentTime = 0
+        loop = false
+        preload = ''
+        addEventListener() {}
+        removeEventListener() {}
+        load = load
+        pause = pause
+        removeAttribute() {}
+        setAttribute() {}
+        play = play
+      },
+    )
+    class FakeAudioContext {
+      currentTime = 0
+      destination = {}
+      createOscillator() {
+        return {
+          frequency: { value: 0 },
+          type: 'sine',
+          connect() {},
+          start() {},
+          stop() {},
+        }
+      }
+      createGain() {
+        return {
+          gain: {
+            setValueAtTime() {},
+            exponentialRampToValueAtTime() {},
+          },
+          connect() {},
+        }
+      }
+      resume() {
+        return Promise.resolve()
+      }
+    }
+    vi.stubGlobal('AudioContext', FakeAudioContext)
+
+    const { unlockSessionAudio } = await import('./scheduledAlarm')
+    unlockSessionAudio()
+    expect(play).toHaveBeenCalled()
+    expect(load).not.toHaveBeenCalled()
+  })
 })

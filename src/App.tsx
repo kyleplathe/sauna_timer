@@ -20,6 +20,7 @@ import { phaseLabel, PRESET_PROGRAMS } from './utils/protocols'
 import {
   cancelScheduledPhaseEndAlarm,
   schedulePhaseEndAlarm,
+  unlockSessionAudio,
 } from './utils/scheduledAlarm'
 import type { EngineEvent } from './utils/timerEngine'
 
@@ -203,6 +204,10 @@ function App() {
       id: `session-${Date.now()}`,
       startedAt: Date.now(),
     }
+    if (settings.audio.enabled) {
+      // Gesture unlock for Web Audio countdown + deferred phase-end HTMLAudio.
+      unlockSessionAudio()
+    }
     if (settings.lockScreenLive) {
       void requestLockScreenPermission()
     }
@@ -228,6 +233,9 @@ function App() {
 
   const handleResume = () => {
     const remainingMs = timer.state.remainingMs
+    if (settings.audio.enabled) {
+      unlockSessionAudio()
+    }
     timer.resume()
     if (settings.audio.enabled && remainingMs > 0) {
       schedulePhaseEndAlarm(remainingMs, settings.audio.volume)

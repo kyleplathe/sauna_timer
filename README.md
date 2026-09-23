@@ -12,6 +12,7 @@ Heat first. Cold second. End on cold. Hands-free walk timers so you do not have 
 - Custom protocols with save/edit/delete
 - Hands-free mode: alarm at phase end, short walk countdown, auto-start next phase
 - Voice / beep cues that **mix over** background music by default (optional “pause music for louder alerts”)
+- Rising tone countdown on the last 5 seconds of each phase
 - **Keep screen awake** during sessions (recommended) so phase-end alarms stay reliable without stealing Spotify
 - Optional sticky lock-screen notification (web apps cannot do a real Live Activity)
 - Square social share card of your stats (save as photo or share via the system sheet)
@@ -86,7 +87,7 @@ Do not enable both Workers Builds auto-deploy and this Action, or every push wil
 2. Leave **Keep screen awake** on (default) — most reliable for alarms + music.
 3. Leave **Voice guidance** off if you want Spotify/Apple Music uninterrupted (voice often pauses music on iPhone).
 4. Leave **Pause music for louder alerts** off so beeps mix over your music.
-5. Start music, start a session, and let the phase-end alarm tell you when to move.
+5. Start music, start a session, and let the phase-end alarm (and last-5-second tones) tell you when to move.
 
 Lock-screen Live Activities are not available to web apps; always-on screen is the practical path.
 

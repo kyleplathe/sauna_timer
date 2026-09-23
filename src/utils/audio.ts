@@ -19,6 +19,27 @@ function getAudioContext(): AudioContext {
   return audioContext
 }
 
+/**
+ * Must run inside a user gesture (Start / Resume).
+ * Keeps Web Audio usable for countdown beeps after the music-mix update
+ * stopped always playing HTMLAudio keepalive.
+ */
+export function unlockWebAudio(): void {
+  setIdleAudioMode('ambient')
+  prepareCueAudio(interruptMusicEnabled ? 'transient' : 'ambient')
+  const ctx = getAudioContext()
+  void ctx.resume()
+  // Tiny inaudible blip so the graph is fully opened on iOS Safari.
+  const oscillator = ctx.createOscillator()
+  const gainNode = ctx.createGain()
+  oscillator.connect(gainNode)
+  gainNode.connect(ctx.destination)
+  gainNode.gain.setValueAtTime(0.0001, ctx.currentTime)
+  oscillator.start(ctx.currentTime)
+  oscillator.stop(ctx.currentTime + 0.02)
+  scheduleCueRelease(80)
+}
+
 function scheduleCueRelease(holdMs: number): void {
   if (releaseCueTimer) clearTimeout(releaseCueTimer)
   releaseCueTimer = setTimeout(() => {
@@ -54,6 +75,16 @@ export function playBeep(
     oscillator.start(ctx.currentTime)
     oscillator.stop(ctx.currentTime + duration)
   })
+}
+
+/** Rising tick used for the final 5-second countdown. */
+export function playCountdownTick(secondsRemaining: number, volume = 0.3): void {
+  const clamped = Math.min(5, Math.max(1, Math.round(secondsRemaining)))
+  // Pitch rises toward zero so each second is distinct under music.
+  const frequency = 480 + (5 - clamped) * 90
+  const duration = clamped === 1 ? 0.28 : 0.12
+  const level = volume * (clamped === 1 ? 0.95 : 0.75)
+  playBeep(frequency, duration, level)
 }
 
 export function playChime(volume = 0.3): void {
@@ -139,12 +170,12 @@ export function announceWarning(
     return
   }
   if (seconds === 10) {
-    playBeep(660, 0.15, volume * 0.6)
+    playBeep(660, 0.15, volume * 0.7)
     if (voiceEnabled) speak('10 seconds', volume)
     return
   }
-  if (seconds <= 5) {
-    playBeep(600, 0.1, volume * 0.5)
+  if (seconds >= 1 && seconds <= 5) {
+    playCountdownTick(seconds, volume)
   }
 }
 

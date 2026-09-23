@@ -70,6 +70,26 @@ describe('timer engine', () => {
     expect(result.events).toContainEqual({ type: 'warning', secondsRemaining: 30 })
   })
 
+  it('emits a tone-countdown warning for each of the last 5 seconds', () => {
+    const shortProgram: Program = {
+      ...program,
+      phases: [{ type: 'sauna', duration: 8 }, ...program.phases.slice(1)],
+    }
+    let { state } = startSession(shortProgram)
+    const options = { handsFree: false, transitionSeconds: 5 }
+    const warnings: number[] = []
+
+    for (let elapsed = 0; elapsed < 7; elapsed += 1) {
+      const result = tick(state, shortProgram, 1000, options)
+      state = result.state
+      result.events.forEach((event) => {
+        if (event.type === 'warning') warnings.push(event.secondsRemaining)
+      })
+    }
+
+    expect(warnings).toEqual([5, 4, 3, 2, 1])
+  })
+
   it('completes after the last cold phase', () => {
     let { state } = startSession(program)
     const options = { handsFree: false, transitionSeconds: 5 }

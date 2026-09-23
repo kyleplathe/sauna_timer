@@ -204,10 +204,9 @@ function App() {
       id: `session-${Date.now()}`,
       startedAt: Date.now(),
     }
-    if (settings.audio.enabled) {
-      // Gesture unlock for Web Audio countdown + deferred phase-end HTMLAudio.
-      unlockSessionAudio()
-    }
+    // Always unlock audio context (requires user gesture) even if currently disabled.
+    // Individual playback functions check settings.audio.enabled before playing.
+    unlockSessionAudio()
     if (settings.lockScreenLive) {
       void requestLockScreenPermission()
     }
@@ -233,9 +232,8 @@ function App() {
 
   const handleResume = () => {
     const remainingMs = timer.state.remainingMs
-    if (settings.audio.enabled) {
-      unlockSessionAudio()
-    }
+    // Always unlock (another user gesture opportunity).
+    unlockSessionAudio()
     timer.resume()
     if (settings.audio.enabled && remainingMs > 0) {
       schedulePhaseEndAlarm(remainingMs, settings.audio.volume)

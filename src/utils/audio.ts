@@ -1,16 +1,7 @@
-import type { PhaseType } from '../types/timer'
 import { prepareCueAudio, releaseCueAudio, setIdleAudioMode } from './audioSession'
 
 let audioContext: AudioContext | null = null
 let releaseCueTimer: ReturnType<typeof setTimeout> | null = null
-/** When true, briefly use transient (may pause Spotify on iOS). Default off. */
-let interruptMusicEnabled = false
-
-export function setDuckMusicEnabled(enabled: boolean): void {
-  // Setting name is historical ("duck"); on iOS transient often pauses music,
-  // so this is now an explicit opt-in to interrupt/duck other audio.
-  interruptMusicEnabled = enabled
-}
 
 function getAudioContext(): AudioContext {
   if (!audioContext) {
@@ -21,12 +12,12 @@ function getAudioContext(): AudioContext {
 
 /**
  * Must run inside a user gesture (Start / Resume).
- * Keeps Web Audio usable for countdown beeps after the music-mix update
- * stopped always playing HTMLAudio keepalive.
+ * Keeps Web Audio usable for countdown beeps. Cues stay ambient so they
+ * mix over Spotify / Apple Music.
  */
 export function unlockWebAudio(): void {
   setIdleAudioMode('ambient')
-  prepareCueAudio(interruptMusicEnabled ? 'transient' : 'ambient')
+  prepareCueAudio('ambient')
   const ctx = getAudioContext()
   void ctx.resume()
   // Tiny inaudible blip so the graph is fully opened on iOS Safari.
@@ -51,7 +42,7 @@ function scheduleCueRelease(holdMs: number): void {
 /** Play a short cue while keeping Spotify/Apple Music mixing (ambient). */
 function withMixedCue(durationMs: number, play: () => void): void {
   setIdleAudioMode('ambient')
-  prepareCueAudio(interruptMusicEnabled ? 'transient' : 'ambient')
+  prepareCueAudio('ambient')
   play()
   scheduleCueRelease(Math.max(250, durationMs + 120))
 }
@@ -112,66 +103,21 @@ export function playCompletionSound(volume = 0.3): void {
   })
 }
 
-export function speak(text: string, volume = 1): void {
-  if (!('speechSynthesis' in window)) return
-  // Speech Synthesis often pauses music on iOS regardless of session type.
-  // Still force ambient first so we do not make it worse.
-  setIdleAudioMode('ambient')
-  prepareCueAudio(interruptMusicEnabled ? 'transient' : 'ambient')
-  const utterance = new SpeechSynthesisUtterance(text)
-  utterance.volume = volume
-  utterance.rate = 1
-  utterance.pitch = 1
-  const holdMs = Math.min(12_000, Math.max(2_000, text.length * 80))
-  utterance.onend = () => scheduleCueRelease(80)
-  utterance.onerror = () => scheduleCueRelease(80)
-  window.speechSynthesis.speak(utterance)
-  scheduleCueRelease(holdMs)
-}
-
-export function getPhaseAnnouncement(
-  phaseType: PhaseType,
-  coldType: 'plunge' | 'shower',
-): string {
-  if (phaseType === 'sauna') return 'Time for sauna'
-  if (phaseType === 'rest') return 'Time to rest'
-  return coldType === 'plunge' ? 'Time for cold plunge' : 'Time for cold shower'
-}
-
-export function announcePhaseChange(
-  phaseType: PhaseType,
-  coldType: 'plunge' | 'shower',
-  voiceEnabled: boolean,
-  volume: number,
-): void {
+export function announcePhaseChange(volume: number): void {
   playTransitionSound(volume)
-  if (voiceEnabled) {
-    window.setTimeout(() => {
-      speak(getPhaseAnnouncement(phaseType, coldType), volume)
-    }, 400)
-  }
 }
 
-export function announceCompletion(voiceEnabled: boolean, volume: number): void {
+export function announceCompletion(volume: number): void {
   playCompletionSound(volume)
-  if (voiceEnabled) {
-    window.setTimeout(() => speak('Session complete. Great work.', volume), 800)
-  }
 }
 
-export function announceWarning(
-  seconds: number,
-  voiceEnabled: boolean,
-  volume: number,
-): void {
+export function announceWarning(seconds: number, volume: number): void {
   if (seconds === 30) {
     playChime(volume * 0.7)
-    if (voiceEnabled) speak('30 seconds remaining', volume)
     return
   }
   if (seconds === 10) {
     playBeep(660, 0.15, volume * 0.7)
-    if (voiceEnabled) speak('10 seconds', volume)
     return
   }
   if (seconds >= 1 && seconds <= 5) {
@@ -179,13 +125,6 @@ export function announceWarning(
   }
 }
 
-export function announceTransition(
-  nextLabel: string,
-  voiceEnabled: boolean,
-  volume: number,
-): void {
+export function announceTransition(volume: number): void {
   playChime(volume)
-  if (voiceEnabled) {
-    speak(`Move to ${nextLabel}`, volume)
-  }
 }

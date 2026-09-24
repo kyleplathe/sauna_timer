@@ -24,6 +24,8 @@ interface TimerDisplayProps {
   onStop: () => void
   onSkip: () => void
   onContinue: () => void
+  resumeNotice?: string | null
+  onResumeNotice?: () => void
 }
 
 export function TimerDisplay({
@@ -41,6 +43,8 @@ export function TimerDisplay({
   onStop,
   onSkip,
   onContinue,
+  resumeNotice,
+  onResumeNotice,
 }: TimerDisplayProps) {
   const isTransition = status === 'transition'
   const isIdle = status === 'idle'
@@ -104,6 +108,15 @@ export function TimerDisplay({
         <p className="text-sm tracking-[0.2em] text-stone-500 uppercase dark:text-stone-400">
           {program.name}
         </p>
+        {resumeNotice && onResumeNotice && (
+          <button
+            type="button"
+            onClick={onResumeNotice}
+            className="mt-4 w-full rounded-2xl bg-amber-200/90 px-4 py-3 text-sm font-medium text-amber-950 dark:bg-amber-900/70 dark:text-amber-50"
+          >
+            {resumeNotice}
+          </button>
+        )}
       </div>
 
       <div className="flex flex-col items-center gap-8">

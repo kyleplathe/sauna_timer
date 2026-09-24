@@ -26,7 +26,7 @@ describe('audioSession', () => {
     expect(session.type).toBe('ambient')
   })
 
-  it('restores ambient idle mode after an optional transient cue', () => {
+  it('keeps cues ambient so a transient request cannot pause music', () => {
     const session = { type: 'auto' }
     Object.defineProperty(navigator, 'audioSession', {
       configurable: true,
@@ -38,7 +38,7 @@ describe('audioSession', () => {
     expect(session.type).toBe('ambient')
 
     prepareCueAudio('transient')
-    expect(session.type).toBe('transient')
+    expect(session.type).toBe('ambient')
 
     releaseCueAudio()
     expect(session.type).toBe('ambient')
@@ -105,15 +105,10 @@ describe('music mix preference', () => {
     }
     vi.stubGlobal('AudioContext', FakeAudioContext)
 
-    const { setDuckMusicEnabled, playBeep } = await import('./audio')
+    const { playBeep } = await import('./audio')
 
-    setDuckMusicEnabled(false)
     playBeep(440, 0.05, 0.1)
     expect(session.type).toBe('ambient')
-
-    setDuckMusicEnabled(true)
-    playBeep(440, 0.05, 0.1)
-    expect(session.type).toBe('transient')
 
     vi.unstubAllGlobals()
   })

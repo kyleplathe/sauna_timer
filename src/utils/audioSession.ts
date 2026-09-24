@@ -10,23 +10,20 @@ type AudioSessionNavigator = Navigator & {
 let idleMode: IdleAudioMode = 'auto'
 
 /**
- * Set how our cues interact with Spotify / Apple Music.
- * Default to ambient (mix). Transient often pauses other apps on iOS
- * even though the spec says it should only duck.
+ * Cues always use ambient so they mix over Spotify / Apple Music.
+ * Transient playback pauses other apps on iPhone, so it is not offered.
  */
-export function prepareCueAudio(mode: CueAudioMode = 'ambient'): void {
+export function prepareCueAudio(_mode: CueAudioMode = 'ambient'): void {
   const session = (navigator as AudioSessionNavigator).audioSession
   if (!session) return
   try {
-    session.type = mode
+    session.type = 'ambient'
   } catch {
     // Unsupported type on this browser — leave platform default alone.
   }
 }
 
-/**
- * Idle / keepalive session type. Prefer ambient so music keeps playing.
- */
+/** Idle session type. Ambient keeps background music playing between cues. */
 export function setIdleAudioMode(mode: IdleAudioMode): void {
   idleMode = mode
   const session = (navigator as AudioSessionNavigator).audioSession

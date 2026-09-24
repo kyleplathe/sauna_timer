@@ -1,4 +1,7 @@
-/* Ember & Ice — ambient music mix + awake-screen defaults (v5) */
+/* Ember & Ice — ambient music mix + awake-screen defaults (v5)
+   Session history and the in-progress timer live in the Cache Storage
+   bucket "ember-ice-state". This worker must not delete that cache.
+*/
 const LIVE_TAG = 'ember-ice-live-timer'
 const SW_VERSION = 'ember-ice-sw-v5'
 

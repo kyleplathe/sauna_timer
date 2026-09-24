@@ -22,10 +22,22 @@ interface UseTimerArgs {
   handsFree: boolean
   transitionSeconds: number
   onEvent: (event: EngineEvent) => void
+  /** Restored engine state from a checkpoint. Applied once, on mount. */
+  initialState?: EngineState
+  initialPhaseEndsAt?: number | null
 }
 
 function phaseKey(state: EngineState): string {
   return `${state.status}|${state.round}|${state.phaseIndex}|${state.phaseDurationMs}`
+}
+
+function initialPhaseAnchor(
+  state: EngineState | undefined,
+  endsAt: number | null | undefined,
+): { key: string; at: number } | null {
+  if (!state || endsAt == null) return null
+  if (state.status !== 'running' && state.status !== 'transition') return null
+  return { key: phaseKey(state), at: endsAt }
 }
 
 export function useTimer({
@@ -33,24 +45,42 @@ export function useTimer({
   handsFree,
   transitionSeconds,
   onEvent,
+  initialState,
+  initialPhaseEndsAt,
 }: UseTimerArgs) {
-  const [state, setState] = useState<EngineState>(idleState)
+  const [state, setState] = useState<EngineState>(initialState ?? idleState)
   const stateRef = useRef(state)
   const programRef = useRef(program)
   const optionsRef = useRef({ handsFree, transitionSeconds })
   const onEventRef = useRef(onEvent)
-  const endsAtRef = useRef<{ key: string; at: number } | null>(null)
+  const endsAtRef = useRef(initialPhaseAnchor(initialState, initialPhaseEndsAt))
 
   stateRef.current = state
   programRef.current = program
   optionsRef.current = { handsFree, transitionSeconds }
   onEventRef.current = onEvent
 
+  const anchorPhase = useCallback((next: EngineState, endsAt?: number | null) => {
+    if (next.status !== 'running' && next.status !== 'transition') {
+      endsAtRef.current = null
+      return
+    }
+    const key = phaseKey(next)
+    if (endsAt != null) {
+      endsAtRef.current = { key, at: endsAt }
+      return
+    }
+    if (!endsAtRef.current || endsAtRef.current.key !== key) {
+      endsAtRef.current = { key, at: Date.now() + next.remainingMs }
+    }
+  }, [])
+
   const apply = useCallback((result: { state: EngineState; events: EngineEvent[] }) => {
     stateRef.current = result.state
     setState(result.state)
+    anchorPhase(result.state)
     result.events.forEach((event) => onEventRef.current(event))
-  }, [])
+  }, [anchorPhase])
 
   const syncFromWallClock = useCallback(() => {
     const current = stateRef.current
@@ -141,13 +171,8 @@ export function useTimer({
     const next = resumeEngine(stateRef.current)
     stateRef.current = next
     setState(next)
-    if (next.status === 'running' || next.status === 'transition') {
-      endsAtRef.current = {
-        key: phaseKey(next),
-        at: Date.now() + next.remainingMs,
-      }
-    }
-  }, [])
+    anchorPhase(next)
+  }, [anchorPhase])
 
   const stop = useCallback(() => {
     endsAtRef.current = null
@@ -165,6 +190,15 @@ export function useTimer({
     if (!programRef.current) return
     apply(continueSession(programRef.current, stateRef.current))
   }, [apply])
+
+  const hydrate = useCallback((next: EngineState, phaseEndsAt: number | null) => {
+    stateRef.current = next
+    setState(next)
+    anchorPhase(next, phaseEndsAt)
+  }, [anchorPhase])
+
+  const getState = useCallback(() => stateRef.current, [])
+  const getPhaseEndsAt = useCallback(() => endsAtRef.current?.at ?? null, [])
 
   const currentPhase: Phase | null = program
     ? (program.phases[state.phaseIndex] ?? null)
@@ -186,5 +220,8 @@ export function useTimer({
     stop,
     skip,
     continueNext,
+    hydrate,
+    getState,
+    getPhaseEndsAt,
   }
 }

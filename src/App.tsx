@@ -13,7 +13,19 @@ import { useAudio } from './hooks/useAudio'
 import { useLiveActivity } from './hooks/useLiveActivity'
 import { useSessionStorage } from './hooks/useSessionStorage'
 import { useTimer } from './hooks/useTimer'
-import type { Program, Session } from './types/timer'
+import type { Program } from './types/timer'
+import {
+  isLiveStatus,
+  sessionFromProgress,
+  type ActiveSessionCheckpoint,
+  type ResumeDecision,
+} from './utils/activeSession'
+import {
+  clearActiveSession,
+  readBestResume,
+  readLocalResume,
+  saveActiveSession,
+} from './utils/activeSessionStore'
 import { downloadHealthData } from './utils/healthExport'
 import { requestLockScreenPermission } from './utils/liveNotifications'
 import { phaseLabel, PRESET_PROGRAMS } from './utils/protocols'
@@ -41,11 +53,31 @@ const NAV: { id: View; label: string }[] = [
   { id: 'safety', label: 'Safety' },
 ]
 
+function resumeNotice(advanced: boolean, audioOn: boolean): string {
+  const lead = advanced
+    ? 'That phase ended while the app was closed. Picked up on the next one.'
+    : 'Picked up your session where it left off.'
+  return audioOn ? `${lead} Tap to turn alerts back on.` : lead
+}
+
 function App() {
-  const [view, setView] = useState<View>('home')
-  const [selectedProgram, setSelectedProgram] = useState<Program | null>(null)
+  const bootResume = useState(() => readLocalResume())[0]
+  const restored = bootResume?.kind === 'resume' ? bootResume : null
+  const [view, setView] = useState<View>(restored ? 'timer' : 'home')
+  const [selectedProgram, setSelectedProgram] = useState<Program | null>(
+    restored?.checkpoint.program ?? null,
+  )
   const [editingProgram, setEditingProgram] = useState<Program | undefined>()
-  const sessionMeta = useRef({ id: '', startedAt: 0 })
+  const [resumeAlert, setResumeAlert] = useState(Boolean(restored))
+  const [resumeAdvanced, setResumeAdvanced] = useState(restored?.advancedPhase ?? false)
+  const [historyNote, setHistoryNote] = useState<string | null>(null)
+  const sessionMeta = useRef(
+    restored
+      ? { id: restored.checkpoint.sessionId, startedAt: restored.checkpoint.startedAt }
+      : { id: '', startedAt: 0 },
+  )
+  const userTookOver = useRef(false)
+  const recoverySettled = useRef(bootResume?.kind === 'resume')
 
   const {
     sessions,
@@ -65,38 +97,94 @@ function App() {
   )
   const audioRef = useRef(audio)
   audioRef.current = audio
-
-  const persistSession = useCallback(
-    (completed: boolean, completedPhases: number, totalPhaseCount: number) => {
-      if (!selectedProgram || !sessionMeta.current.startedAt) return
-      const session: Session = {
-        id: sessionMeta.current.id,
-        programId: selectedProgram.id,
-        programName: selectedProgram.name,
-        startTime: sessionMeta.current.startedAt,
-        endTime: Date.now(),
-        completedPhases,
-        totalPhases: totalPhaseCount,
-        duration: Math.max(
-          1,
-          Math.floor((Date.now() - sessionMeta.current.startedAt) / 1000),
-        ),
-        completed,
-      }
-      saveSession(session)
-      sessionMeta.current = { id: '', startedAt: 0 }
-    },
-    [saveSession, selectedProgram],
-  )
-  const persistRef = useRef(persistSession)
-  persistRef.current = persistSession
+  const saveSessionRef = useRef(saveSession)
+  saveSessionRef.current = saveSession
+  const selectedProgramRef = useRef(selectedProgram)
+  selectedProgramRef.current = selectedProgram
+  const settingsRef = useRef(settings)
+  settingsRef.current = settings
   const timerRef = useRef<ReturnType<typeof useTimer> | null>(null)
+  const stopRef = useRef<() => void>(() => {})
+  const transitionRef = useRef(10)
 
   // Keep the dry-run demo snappy so it clearly ends after one heat + cold.
   const transitionSeconds =
     selectedProgram?.id === 'practice'
       ? Math.min(5, settings.handsFreeTransitionDuration)
       : settings.handsFreeTransitionDuration
+  transitionRef.current = transitionSeconds
+
+  const flushActiveSession = useCallback(() => {
+    const program = selectedProgramRef.current
+    const meta = sessionMeta.current
+    const api = timerRef.current
+    if (!program || !meta.startedAt || !api) return
+    const state = api.getState()
+    if (!isLiveStatus(state.status)) return
+    const now = Date.now()
+    const checkpoint: ActiveSessionCheckpoint = {
+      version: 1,
+      sessionId: meta.id,
+      startedAt: meta.startedAt,
+      updatedAt: now,
+      program,
+      state,
+      phaseEndsAt: api.getPhaseEndsAt(),
+      handsFree: settingsRef.current.handsFreeModeEnabled,
+      transitionSeconds: transitionRef.current,
+    }
+    saveActiveSession(checkpoint)
+    saveSessionRef.current(sessionFromProgress(checkpoint, state, now, false))
+  }, [])
+
+  const commitSession = useCallback((completed: boolean) => {
+    const program = selectedProgramRef.current
+    const meta = sessionMeta.current
+    const state = timerRef.current?.getState()
+    if (program && meta.startedAt && state) {
+      saveSessionRef.current(
+        sessionFromProgress(
+          {
+            sessionId: meta.id,
+            startedAt: meta.startedAt,
+            program,
+          },
+          state,
+          Date.now(),
+          completed,
+        ),
+      )
+    }
+    sessionMeta.current = { id: '', startedAt: 0 }
+    clearActiveSession()
+  }, [])
+
+  const finishRecovered = useCallback((decision: Extract<ResumeDecision, { kind: 'finished' }>) => {
+    if (recoverySettled.current) return
+    recoverySettled.current = true
+    saveSessionRef.current(
+      sessionFromProgress(decision.checkpoint, decision.state, Date.now(), true),
+    )
+    sessionMeta.current = { id: '', startedAt: 0 }
+    clearActiveSession()
+    setSelectedProgram(null)
+    setResumeAlert(false)
+    setHistoryNote('The timer finished this session while the app was closed. It is saved below.')
+    setView('history')
+  }, [])
+
+  const applyResume = useCallback((decision: Extract<ResumeDecision, { kind: 'resume' }>) => {
+    recoverySettled.current = true
+    sessionMeta.current = {
+      id: decision.checkpoint.sessionId,
+      startedAt: decision.checkpoint.startedAt,
+    }
+    setSelectedProgram(decision.checkpoint.program)
+    setResumeAdvanced(decision.advancedPhase)
+    setResumeAlert(true)
+    setView('timer')
+    timerRef.current?.hydrate(decision.checkpoint.state, decision.checkpoint.phaseEndsAt)
+  }, [])
 
   const handleEvent = useCallback((event: EngineEvent) => {
     const volume = settings.audio.volume
@@ -127,12 +215,14 @@ function App() {
     if (event.type === 'complete') {
       cancelScheduledPhaseEndAlarm()
       audioRef.current.playCompletionSound()
-      persistRef.current(true, event.completedPhases, event.totalPhases)
+      commitSession(true)
       timerRef.current?.stop()
+      setResumeAlert(false)
       setSelectedProgram(null)
       setView('history')
     }
   }, [
+    commitSession,
     selectedProgram?.coldType,
     settings.audio.enabled,
     settings.audio.volume,
@@ -144,6 +234,8 @@ function App() {
     handsFree: settings.handsFreeModeEnabled,
     transitionSeconds,
     onEvent: handleEvent,
+    initialState: restored?.checkpoint.state,
+    initialPhaseEndsAt: restored?.checkpoint.phaseEndsAt,
   })
   timerRef.current = timer
 
@@ -173,6 +265,71 @@ function App() {
   }, [settings.darkMode])
 
   useEffect(() => {
+    flushActiveSession()
+  }, [
+    flushActiveSession,
+    selectedProgram,
+    settings.handsFreeModeEnabled,
+    timer.state.completedPhases,
+    timer.state.pausedFrom,
+    timer.state.phaseIndex,
+    timer.state.round,
+    timer.state.status,
+    transitionSeconds,
+  ])
+
+  useEffect(() => {
+    if (!isLiveStatus(timer.state.status)) return
+    const id = window.setInterval(() => flushActiveSession(), 15_000)
+    return () => window.clearInterval(id)
+  }, [flushActiveSession, timer.state.status])
+
+  useEffect(() => {
+    const onHide = () => {
+      if (document.visibilityState === 'hidden') flushActiveSession()
+    }
+    window.addEventListener('pagehide', flushActiveSession)
+    window.addEventListener('freeze', flushActiveSession)
+    document.addEventListener('visibilitychange', onHide)
+    return () => {
+      window.removeEventListener('pagehide', flushActiveSession)
+      window.removeEventListener('freeze', flushActiveSession)
+      document.removeEventListener('visibilitychange', onHide)
+    }
+  }, [flushActiveSession])
+
+  useEffect(() => {
+    if (bootResume?.kind === 'finished') finishRecovered(bootResume)
+  }, [bootResume, finishRecovered])
+
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      const decision = await readBestResume()
+      if (cancelled || userTookOver.current) return
+      if (bootResume?.kind === 'resume') {
+        if (
+          decision?.kind === 'resume' &&
+          decision.checkpoint.updatedAt > bootResume.checkpoint.updatedAt
+        ) {
+          applyResume(decision)
+        }
+        return
+      }
+      if (bootResume?.kind === 'finished') return
+      if (!decision || decision.kind === 'stale') {
+        if (decision?.kind === 'stale' || bootResume?.kind === 'stale') clearActiveSession()
+        return
+      }
+      if (decision.kind === 'finished') finishRecovered(decision)
+      else applyResume(decision)
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [applyResume, bootResume, finishRecovered])
+
+  useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       const api = timerRef.current
       if (view !== 'timer' || !api) return
@@ -185,9 +342,7 @@ function App() {
       } else if (event.key === 'n' || event.key === 'N') {
         api.skip()
       } else if (event.key === 'Escape') {
-        api.stop()
-        setView('home')
-        setSelectedProgram(null)
+        stopRef.current()
       }
     }
     window.addEventListener('keydown', onKey)
@@ -203,6 +358,7 @@ function App() {
   }, [customPrograms, settings.preferredColdType, settings.practiceDismissed])
 
   const handleStart = () => {
+    userTookOver.current = true
     sessionMeta.current = {
       id: `session-${Date.now()}`,
       startedAt: Date.now(),
@@ -215,23 +371,24 @@ function App() {
       void requestLockScreenPermission()
     }
     timer.start()
+    flushActiveSession()
   }
 
   const handleStop = () => {
+    userTookOver.current = true
     cancelScheduledPhaseEndAlarm()
-    persistRef.current(
-      false,
-      timer.state.completedPhases,
-      timer.totalPhaseCount,
-    )
+    commitSession(false)
     timer.stop()
+    setResumeAlert(false)
     setSelectedProgram(null)
     setView('home')
   }
+  stopRef.current = handleStop
 
   const handlePause = () => {
     cancelScheduledPhaseEndAlarm()
     timer.pause()
+    flushActiveSession()
   }
 
   const handleResume = () => {
@@ -240,6 +397,7 @@ function App() {
       unlockSessionAudio()
     }
     timer.resume()
+    flushActiveSession()
     if (settings.audio.enabled && remainingMs > 0) {
       schedulePhaseEndAlarm(remainingMs, settings.audio.volume)
     }
@@ -248,6 +406,25 @@ function App() {
   const handleSkip = () => {
     cancelScheduledPhaseEndAlarm()
     timer.skip()
+    flushActiveSession()
+  }
+
+  const handleContinue = () => {
+    timer.continueNext()
+    flushActiveSession()
+  }
+
+  const acknowledgeResume = () => {
+    setResumeAlert(false)
+    if (!settings.audio.enabled) return
+    const state = timer.getState()
+    unlockSessionAudio()
+    if (
+      (state.status === 'running' || state.status === 'transition') &&
+      state.remainingMs > 0
+    ) {
+      schedulePhaseEndAlarm(state.remainingMs, settings.audio.volume)
+    }
   }
 
   return (
@@ -349,7 +526,13 @@ function App() {
               onResume={handleResume}
               onStop={handleStop}
               onSkip={handleSkip}
-              onContinue={timer.continueNext}
+              onContinue={handleContinue}
+              resumeNotice={
+                resumeAlert
+                  ? resumeNotice(resumeAdvanced, settings.audio.enabled)
+                  : null
+              }
+              onResumeNotice={acknowledgeResume}
             />
           </motion.div>
         )}
@@ -386,6 +569,11 @@ function App() {
             className="mx-auto max-w-6xl py-8"
           >
             <SessionStats stats={stats} />
+            {historyNote && (
+              <p className="mx-4 mb-4 rounded-2xl bg-amber-100 px-4 py-3 text-sm text-amber-950 dark:bg-amber-950/40 dark:text-amber-50">
+                {historyNote}
+              </p>
+            )}
             <ShareStatsCard stats={stats} />
             <SessionHistory
               sessions={sessions}

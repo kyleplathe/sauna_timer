@@ -21,16 +21,12 @@ import {
 const SESSIONS_KEY = 'sauna_sessions'
 const CUSTOM_PROGRAMS_KEY = 'sauna_custom_programs'
 const SETTINGS_KEY = 'sauna_settings'
-/** One-time flip away from settings that pause Spotify during cues. */
-const AUDIO_MIX_MIGRATION_KEY = 'sauna_audio_mix_v2'
 
 export const DEFAULT_SETTINGS: AppSettings = {
   audio: {
     enabled: true,
-    voiceGuidance: false,
     warnings: true,
     volume: 0.85,
-    duckMusic: false,
   },
   darkMode: true,
   handsFreeModeEnabled: true,
@@ -39,45 +35,32 @@ export const DEFAULT_SETTINGS: AppSettings = {
   temperatureUnit: 'F',
   disclaimerAccepted: false,
   practiceDismissed: false,
-  keepScreenAwake: true,
-  lockScreenLive: false,
 }
 
 function mergeSettings(stored: Partial<AppSettings> | null | undefined): AppSettings {
+  const audio = stored?.audio
   return {
     ...DEFAULT_SETTINGS,
-    ...stored,
+    darkMode: stored?.darkMode ?? DEFAULT_SETTINGS.darkMode,
+    handsFreeModeEnabled:
+      stored?.handsFreeModeEnabled ?? DEFAULT_SETTINGS.handsFreeModeEnabled,
+    handsFreeTransitionDuration:
+      stored?.handsFreeTransitionDuration ?? DEFAULT_SETTINGS.handsFreeTransitionDuration,
+    preferredColdType: stored?.preferredColdType ?? DEFAULT_SETTINGS.preferredColdType,
+    temperatureUnit: stored?.temperatureUnit ?? DEFAULT_SETTINGS.temperatureUnit,
+    disclaimerAccepted: stored?.disclaimerAccepted ?? DEFAULT_SETTINGS.disclaimerAccepted,
+    practiceDismissed: stored?.practiceDismissed ?? DEFAULT_SETTINGS.practiceDismissed,
     audio: {
-      ...DEFAULT_SETTINGS.audio,
-      ...stored?.audio,
+      enabled: audio?.enabled ?? DEFAULT_SETTINGS.audio.enabled,
+      warnings: audio?.warnings ?? DEFAULT_SETTINGS.audio.warnings,
+      volume: typeof audio?.volume === 'number' ? audio.volume : DEFAULT_SETTINGS.audio.volume,
     },
   }
 }
 
 function loadSettings(): { settings: AppSettings; updatedAt: number } {
   const envelope = readLocalEnvelope<Partial<AppSettings>>(SETTINGS_KEY)
-  const merged = mergeSettings(envelope?.value)
-
-  // Existing installs still had duck+voice on, which pauses Spotify on iPhone.
-  try {
-    if (localStorage.getItem(AUDIO_MIX_MIGRATION_KEY) !== '1') {
-      merged.audio = {
-        ...merged.audio,
-        duckMusic: false,
-        voiceGuidance: false,
-      }
-      merged.keepScreenAwake = true
-      merged.lockScreenLive = false
-      const updatedAt = Date.now()
-      writeLocalEnvelope(SETTINGS_KEY, { updatedAt, value: merged })
-      localStorage.setItem(AUDIO_MIX_MIGRATION_KEY, '1')
-      return { settings: merged, updatedAt }
-    }
-  } catch {
-    // Storage can be blocked; keep the in-memory defaults.
-  }
-
-  return { settings: merged, updatedAt: envelope?.updatedAt ?? 0 }
+  return { settings: mergeSettings(envelope?.value), updatedAt: envelope?.updatedAt ?? 0 }
 }
 
 function loadPrograms(): { programs: Program[]; updatedAt: number } {

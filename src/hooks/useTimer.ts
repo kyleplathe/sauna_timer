@@ -14,7 +14,6 @@ import {
   type EngineEvent,
   type EngineState,
 } from '../utils/timerEngine'
-import { setSessionHeartbeat } from '../utils/scheduledAlarm'
 import { wallClockTickDelta } from '../utils/wallClockTick'
 
 interface UseTimerArgs {
@@ -116,13 +115,6 @@ export function useTimer({
       endsAtRef.current = null
     }
   }, [apply])
-
-  useEffect(() => {
-    setSessionHeartbeat(() => {
-      syncFromWallClock()
-    })
-    return () => setSessionHeartbeat(null)
-  }, [syncFromWallClock])
 
   useEffect(() => {
     if (state.status !== 'running' && state.status !== 'transition') {

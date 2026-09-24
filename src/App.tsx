@@ -10,7 +10,6 @@ import { ShareStatsCard } from './components/Session/ShareStatsCard'
 import { Settings } from './components/Settings'
 import { TimerDisplay } from './components/Timer/TimerDisplay'
 import { useAudio } from './hooks/useAudio'
-import { useLiveActivity } from './hooks/useLiveActivity'
 import { useSessionStorage } from './hooks/useSessionStorage'
 import { useTimer } from './hooks/useTimer'
 import type { Program } from './types/timer'
@@ -27,8 +26,7 @@ import {
   saveActiveSession,
 } from './utils/activeSessionStore'
 import { downloadHealthData } from './utils/healthExport'
-import { requestLockScreenPermission } from './utils/liveNotifications'
-import { phaseLabel, PRESET_PROGRAMS } from './utils/protocols'
+import { formatClock, phaseLabel, PRESET_PROGRAMS } from './utils/protocols'
 import {
   cancelScheduledPhaseEndAlarm,
   schedulePhaseEndAlarm,
@@ -91,10 +89,7 @@ function App() {
     updateSettings,
   } = useSessionStorage()
 
-  const audio = useAudio(
-    settings.audio,
-    selectedProgram?.coldType ?? settings.preferredColdType,
-  )
+  const audio = useAudio(settings.audio)
   const audioRef = useRef(audio)
   audioRef.current = audio
   const saveSessionRef = useRef(saveSession)
@@ -248,17 +243,30 @@ function App() {
     timer.state.status !== 'idle' &&
     timer.state.status !== 'complete'
 
-  useLiveActivity({
-    active: liveActive,
-    phaseType: currentPhase?.type ?? null,
-    coldType: selectedProgram?.coldType ?? settings.preferredColdType,
-    remainingMs: timer.state.remainingMs,
-    phaseDurationMs: timer.state.phaseDurationMs,
-    status: timer.state.status,
-    programName: selectedProgram?.name ?? 'Sauna Timer',
-    keepScreenAwake: !!settings.keepScreenAwake,
-    lockScreenLive: !!settings.lockScreenLive,
-  })
+  useEffect(() => {
+    const baseTitle = 'Ember & Ice — Contrast Therapy Timer'
+    if (!liveActive || !currentPhase) {
+      document.title = baseTitle
+      return
+    }
+    const label =
+      timer.state.status === 'transition'
+        ? 'Walk'
+        : timer.state.status === 'paused'
+          ? 'Paused'
+          : phaseLabel(
+              currentPhase.type,
+              selectedProgram?.coldType ?? settings.preferredColdType,
+            )
+    document.title = `${formatClock(timer.state.remainingMs / 1000)} · ${label}`
+  }, [
+    currentPhase,
+    liveActive,
+    selectedProgram?.coldType,
+    settings.preferredColdType,
+    timer.state.remainingMs,
+    timer.state.status,
+  ])
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', settings.darkMode)
@@ -366,9 +374,6 @@ function App() {
     if (settings.audio.enabled) {
       // Gesture unlock for Web Audio countdown + deferred phase-end HTMLAudio.
       unlockSessionAudio()
-    }
-    if (settings.lockScreenLive) {
-      void requestLockScreenPermission()
     }
     timer.start()
     flushActiveSession()

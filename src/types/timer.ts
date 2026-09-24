@@ -44,11 +44,8 @@ export interface SessionStats {
 
 export interface AudioSettings {
   enabled: boolean
-  voiceGuidance: boolean
   warnings: boolean
   volume: number
-  /** Duck background music for cues instead of stopping it (when the browser allows). */
-  duckMusic: boolean
 }
 
 export interface AppSettings {
@@ -61,8 +58,4 @@ export interface AppSettings {
   disclaimerAccepted: boolean
   /** Hide the Dry run demo protocol card until restored from Settings. */
   practiceDismissed: boolean
-  /** Keep the display awake during a session (prevents lock-screen live view). */
-  keepScreenAwake: boolean
-  /** Update a lock-screen / notification live timer while a session runs. */
-  lockScreenLive: boolean
 }

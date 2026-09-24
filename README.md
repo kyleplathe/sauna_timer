@@ -15,8 +15,8 @@ Heat first. Cold second. End on cold. Hands-free walk timers so you do not have 
 - Rising tone countdown on the last 5 seconds of each phase
 - **Keep screen awake** during sessions (recommended) so phase-end alarms stay reliable without stealing Spotify
 - Optional sticky lock-screen notification (web apps cannot do a real Live Activity)
-- Square social share card of your stats (save as photo or share via the system sheet)
-- Session history, streaks, and CSV export for Apple Health import tools
+- Square social share card of cumulative stats — sessions, streak, total time, avg heat, cold time (save as photo or share via the system sheet)
+- Session history, streaks, heat/cold exposure totals, and CSV export for Apple Health import tools
 - Protocol guide and safety notes
 - Installable PWA, dark mode, large type you can read from across the room
 

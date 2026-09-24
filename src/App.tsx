@@ -14,6 +14,7 @@ import { useLiveActivity } from './hooks/useLiveActivity'
 import { useSessionStorage } from './hooks/useSessionStorage'
 import { useTimer } from './hooks/useTimer'
 import type { Program, Session } from './types/timer'
+import { exposureFromProgramProgress } from './utils/sessionMetrics'
 import { downloadHealthData } from './utils/healthExport'
 import { requestLockScreenPermission } from './utils/liveNotifications'
 import { phaseLabel, PRESET_PROGRAMS } from './utils/protocols'
@@ -69,6 +70,11 @@ function App() {
   const persistSession = useCallback(
     (completed: boolean, completedPhases: number, totalPhaseCount: number) => {
       if (!selectedProgram || !sessionMeta.current.startedAt) return
+      const exposure = exposureFromProgramProgress(
+        selectedProgram,
+        completedPhases,
+        totalPhaseCount,
+      )
       const session: Session = {
         id: sessionMeta.current.id,
         programId: selectedProgram.id,
@@ -82,6 +88,11 @@ function App() {
           Math.floor((Date.now() - sessionMeta.current.startedAt) / 1000),
         ),
         completed,
+        avgHeatC: exposure.avgHeatC || undefined,
+        avgColdC: exposure.avgColdC || undefined,
+        heatSeconds: exposure.heatSeconds,
+        coldSeconds: exposure.coldSeconds,
+        roundsCompleted: exposure.roundsCompleted,
       }
       saveSession(session)
       sessionMeta.current = { id: '', startedAt: 0 }
@@ -385,8 +396,14 @@ function App() {
             exit={{ opacity: 0 }}
             className="mx-auto max-w-6xl py-8"
           >
-            <SessionStats stats={stats} />
-            <ShareStatsCard stats={stats} />
+            <SessionStats
+              stats={stats}
+              temperatureUnit={settings.temperatureUnit}
+            />
+            <ShareStatsCard
+              stats={stats}
+              temperatureUnit={settings.temperatureUnit}
+            />
             <SessionHistory
               sessions={sessions}
               onDelete={deleteSession}

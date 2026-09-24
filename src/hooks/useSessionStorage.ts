@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import type { AppSettings, Program, Session, SessionStats } from '../types/timer'
+import { computeSessionStats } from '../utils/sessionMetrics'
 
 const SESSIONS_KEY = 'sauna_sessions'
 const CUSTOM_PROGRAMS_KEY = 'sauna_custom_programs'
@@ -67,12 +68,6 @@ function loadSettings(): AppSettings {
   return merged
 }
 
-function startOfDay(timestamp: number): number {
-  const date = new Date(timestamp)
-  date.setHours(0, 0, 0, 0)
-  return date.getTime()
-}
-
 export function useSessionStorage() {
   const [sessions, setSessions] = useState<Session[]>(() =>
     readJson<Session[]>(SESSIONS_KEY, []),
@@ -126,45 +121,10 @@ export function useSessionStorage() {
     })
   }, [])
 
-  const stats: SessionStats = useMemo(() => {
-    const now = Date.now()
-    const weekAgo = now - 7 * 24 * 60 * 60 * 1000
-    const monthAgo = now - 30 * 24 * 60 * 60 * 1000
-    const completed = sessions.filter((session) => session.completed)
-    const uniqueDays = [
-      ...new Set(completed.map((session) => startOfDay(session.startTime))),
-    ].sort((a, b) => a - b)
-
-    let longestStreak = 0
-    let tempStreak = 0
-    let previous = 0
-    uniqueDays.forEach((day) => {
-      if (previous && day - previous <= 24 * 60 * 60 * 1000) {
-        tempStreak += 1
-      } else {
-        tempStreak = 1
-      }
-      longestStreak = Math.max(longestStreak, tempStreak)
-      previous = day
-    })
-
-    const today = startOfDay(now)
-    const lastDay = uniqueDays[uniqueDays.length - 1]
-    const currentStreak =
-      lastDay && today - lastDay <= 24 * 60 * 60 * 1000 ? tempStreak : 0
-
-    return {
-      totalSessions: completed.length,
-      totalDuration: completed.reduce((sum, session) => sum + session.duration, 0),
-      currentStreak,
-      longestStreak,
-      sessionsThisWeek: completed.filter((session) => session.startTime >= weekAgo)
-        .length,
-      sessionsThisMonth: completed.filter((session) => session.startTime >= monthAgo)
-        .length,
-      lastSessionDate: completed[completed.length - 1]?.startTime,
-    }
-  }, [sessions])
+  const stats: SessionStats = useMemo(
+    () => computeSessionStats(sessions, { customPrograms }),
+    [sessions, customPrograms],
+  )
 
   return {
     sessions,

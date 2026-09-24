@@ -17,7 +17,7 @@ Heat first. Cold second. End on cold. Hands-free walk timers so you do not have 
 - Optional sticky lock-screen notification (web apps cannot do a real Live Activity)
 - Square social share card of your stats (save as photo or share via the system sheet)
 - Session history, streaks, and CSV export for Apple Health import tools
-- Protocol guide and safety notes
+- Protocol guide, science explainers (heat/cold physiology + sources), and safety notes
 - Installable PWA, dark mode, large type you can read from across the room
 
 ## Develop

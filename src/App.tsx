@@ -4,6 +4,7 @@ import { CustomBuilder } from './components/Programs/CustomBuilder'
 import { PresetSelector } from './components/Programs/PresetSelector'
 import { ProtocolGuide } from './components/Education/ProtocolGuide'
 import { SafetyTips } from './components/Education/SafetyTips'
+import { ScienceExplained } from './components/Education/ScienceExplained'
 import { SessionHistory } from './components/Session/SessionHistory'
 import { SessionStats } from './components/Session/SessionStats'
 import { ShareStatsCard } from './components/Session/ShareStatsCard'
@@ -30,6 +31,7 @@ type View =
   | 'custom'
   | 'history'
   | 'education'
+  | 'science'
   | 'safety'
   | 'settings'
 
@@ -38,6 +40,7 @@ const NAV: { id: View; label: string }[] = [
   { id: 'custom', label: 'Custom' },
   { id: 'history', label: 'History' },
   { id: 'education', label: 'Guide' },
+  { id: 'science', label: 'Science' },
   { id: 'safety', label: 'Safety' },
 ]
 
@@ -398,6 +401,12 @@ function App() {
         {view === 'education' && (
           <motion.div key="education" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <ProtocolGuide />
+          </motion.div>
+        )}
+
+        {view === 'science' && (
+          <motion.div key="science" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <ScienceExplained />
           </motion.div>
         )}
 

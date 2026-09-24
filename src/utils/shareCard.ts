@@ -1,4 +1,5 @@
 import type { SessionStats } from '../types/timer'
+import { formatAvgTempC } from './sessionMetrics'
 
 export const SHARE_CARD_SIZE = 1080
 
@@ -46,7 +47,7 @@ function roundRect(
   ctx.moveTo(x + r, y)
   ctx.arcTo(x + w, y, x + w, y + h, r)
   ctx.arcTo(x + w, y + h, x, y + h, r)
-  ctx.arcTo(x, y + h, x, y, r)
+  ctx.arcTo(x + w, y + h, x, y, r)
   ctx.arcTo(x, y, x + w, y, r)
   ctx.closePath()
 }
@@ -65,6 +66,18 @@ function fillTrackedText(
   }
 }
 
+function measureTracked(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  tracking: number,
+): number {
+  let width = 0
+  for (const char of text) {
+    width += ctx.measureText(char).width + tracking
+  }
+  return Math.max(0, width - tracking)
+}
+
 function drawGrain(ctx: CanvasRenderingContext2D, size: number): void {
   const image = ctx.createImageData(size, size)
   const data = image.data
@@ -80,9 +93,10 @@ function drawGrain(ctx: CanvasRenderingContext2D, size: number): void {
 
 export async function renderShareStatsCard(
   stats: SessionStats,
-  options: { size?: number } = {},
+  options: { size?: number; temperatureUnit?: 'C' | 'F' } = {},
 ): Promise<HTMLCanvasElement> {
   const size = options.size ?? SHARE_CARD_SIZE
+  const temperatureUnit = options.temperatureUnit ?? 'C'
   const canvas = document.createElement('canvas')
   canvas.width = size
   canvas.height = size
@@ -103,9 +117,30 @@ export async function renderShareStatsCard(
   ctx.fillStyle = bg
   ctx.fillRect(0, 0, size, size)
 
-  fillRadial(ctx, size * 0.18, size * 0.16, size * 0.55, 'rgba(249,115,22,0.38)', 'rgba(249,115,22,0)')
-  fillRadial(ctx, size * 0.82, size * 0.78, size * 0.58, 'rgba(6,182,212,0.32)', 'rgba(6,182,212,0)')
-  fillRadial(ctx, size * 0.55, size * 0.42, size * 0.35, 'rgba(255,237,213,0.08)', 'rgba(255,237,213,0)')
+  fillRadial(
+    ctx,
+    size * 0.18,
+    size * 0.16,
+    size * 0.55,
+    'rgba(249,115,22,0.38)',
+    'rgba(249,115,22,0)',
+  )
+  fillRadial(
+    ctx,
+    size * 0.82,
+    size * 0.78,
+    size * 0.58,
+    'rgba(6,182,212,0.32)',
+    'rgba(6,182,212,0)',
+  )
+  fillRadial(
+    ctx,
+    size * 0.55,
+    size * 0.42,
+    size * 0.35,
+    'rgba(255,237,213,0.08)',
+    'rgba(255,237,213,0)',
+  )
 
   ctx.save()
   ctx.globalCompositeOperation = 'soft-light'
@@ -125,18 +160,23 @@ export async function renderShareStatsCard(
   fillTrackedText(ctx, 'EMBER & ICE', 88 * s, 120 * s, 5 * s)
 
   ctx.fillStyle = '#f8f1ea'
-  ctx.font = `650 ${72 * s}px Fraunces, Georgia, serif`
-  ctx.fillText('Contrast', 88 * s, 210 * s)
-  ctx.fillText('practice', 88 * s, 285 * s)
+  ctx.font = `650 ${68 * s}px Fraunces, Georgia, serif`
+  ctx.fillText('Contrast', 88 * s, 200 * s)
+  ctx.fillText('practice', 88 * s, 270 * s)
 
   ctx.fillStyle = 'rgba(244,236,227,0.62)'
-  ctx.font = `400 ${26 * s}px Outfit, sans-serif`
-  ctx.fillText('Heat first. Cold second. Keep going.', 88 * s, 340 * s)
+  ctx.font = `400 ${24 * s}px Outfit, sans-serif`
+  ctx.fillText('Heat first. Cold second. Keep going.', 88 * s, 320 * s)
 
-  // Hero panel
-  const heroY = 390 * s
-  roundRect(ctx, 72 * s, heroY, size - 144 * s, 250 * s, 36 * s)
-  const heroFill = ctx.createLinearGradient(72 * s, heroY, size - 72 * s, heroY + 250 * s)
+  // Hero panel — sessions + streak
+  const heroY = 360 * s
+  roundRect(ctx, 72 * s, heroY, size - 144 * s, 230 * s, 36 * s)
+  const heroFill = ctx.createLinearGradient(
+    72 * s,
+    heroY,
+    size - 72 * s,
+    heroY + 230 * s,
+  )
   heroFill.addColorStop(0, 'rgba(255,255,255,0.08)')
   heroFill.addColorStop(1, 'rgba(255,255,255,0.03)')
   ctx.fillStyle = heroFill
@@ -146,33 +186,75 @@ export async function renderShareStatsCard(
   ctx.stroke()
 
   ctx.fillStyle = 'rgba(251,146,60,0.9)'
-  ctx.font = `500 ${20 * s}px Outfit, sans-serif`
-  fillTrackedText(ctx, 'SESSIONS', 110 * s, heroY + 58 * s, 4 * s)
+  ctx.font = `500 ${18 * s}px Outfit, sans-serif`
+  fillTrackedText(ctx, 'SESSIONS', 110 * s, heroY + 52 * s, 4 * s)
 
   ctx.fillStyle = '#fff7ed'
-  ctx.font = `650 ${128 * s}px Fraunces, Georgia, serif`
-  ctx.fillText(String(stats.totalSessions), 110 * s, heroY + 175 * s)
+  ctx.font = `650 ${112 * s}px Fraunces, Georgia, serif`
+  ctx.fillText(String(stats.totalSessions), 110 * s, heroY + 155 * s)
 
-  ctx.fillStyle = 'rgba(244,236,227,0.7)'
-  ctx.font = `400 ${24 * s}px Outfit, sans-serif`
+  ctx.fillStyle = 'rgba(244,236,227,0.72)'
+  ctx.font = `400 ${22 * s}px Outfit, sans-serif`
   const streakLine =
     stats.currentStreak > 0
-      ? `${plural(stats.currentStreak, 'day')} streak · best ${stats.longestStreak}`
+      ? `${plural(stats.currentStreak, 'day')} in a row · best ${stats.longestStreak}`
       : `Best streak ${plural(stats.longestStreak, 'day')}`
-  ctx.fillText(streakLine, 110 * s, heroY + 215 * s)
+  ctx.fillText(streakLine, 110 * s, heroY + 195 * s)
 
-  // Stat chips
+  // Right-side hero: cumulative time
+  ctx.textAlign = 'right'
+  ctx.fillStyle = 'rgba(103,232,249,0.9)'
+  ctx.font = `500 ${18 * s}px Outfit, sans-serif`
+  fillTrackedText(
+    ctx,
+    'TIME IN',
+    size - 110 * s - measureTracked(ctx, 'TIME IN', 4 * s),
+    heroY + 52 * s,
+    4 * s,
+  )
+  ctx.fillStyle = '#ecfeff'
+  ctx.font = `650 ${56 * s}px Fraunces, Georgia, serif`
+  ctx.fillText(
+    formatPracticeTime(stats.totalDuration),
+    size - 110 * s,
+    heroY + 130 * s,
+  )
+  ctx.fillStyle = 'rgba(244,236,227,0.55)'
+  ctx.font = `400 ${20 * s}px Outfit, sans-serif`
+  const avgLine =
+    stats.averageDuration > 0
+      ? `Avg ${formatPracticeTime(stats.averageDuration)} / session`
+      : 'Start a session'
+  ctx.fillText(avgLine, size - 110 * s, heroY + 175 * s)
+  ctx.textAlign = 'left'
+
+  // Stat chips — heat, cold, week (social hooks)
   const chips = [
-    { label: 'TIME IN', value: formatPracticeTime(stats.totalDuration), tone: 'ember' as const },
-    { label: 'THIS WEEK', value: String(stats.sessionsThisWeek), tone: 'ice' as const },
-    { label: 'THIS MONTH', value: String(stats.sessionsThisMonth), tone: 'ember' as const },
+    {
+      label: 'AVG HEAT',
+      value: formatAvgTempC(stats.averageHeatC, temperatureUnit),
+      tone: 'ember' as const,
+    },
+    {
+      label: 'COLD TIME',
+      value:
+        stats.totalColdSeconds > 0
+          ? formatPracticeTime(stats.totalColdSeconds)
+          : '—',
+      tone: 'ice' as const,
+    },
+    {
+      label: 'THIS WEEK',
+      value: String(stats.sessionsThisWeek),
+      tone: 'ember' as const,
+    },
   ]
 
   const chipW = 280 * s
   const chipH = 150 * s
   const gap = 28 * s
   const chipsX = 72 * s
-  const chipsY = 680 * s
+  const chipsY = 630 * s
 
   chips.forEach((chip, index) => {
     const x = chipsX + index * (chipW + gap)
@@ -195,9 +277,18 @@ export async function renderShareStatsCard(
     fillTrackedText(ctx, chip.label, x + 28 * s, chipsY + 48 * s, 3 * s)
 
     ctx.fillStyle = '#f8f1ea'
-    ctx.font = `650 ${48 * s}px Fraunces, Georgia, serif`
+    ctx.font = `650 ${44 * s}px Fraunces, Georgia, serif`
     ctx.fillText(chip.value, x + 28 * s, chipsY + 108 * s)
   })
+
+  // Invite line
+  ctx.fillStyle = 'rgba(244,236,227,0.5)'
+  ctx.font = `400 ${20 * s}px Outfit, sans-serif`
+  const invite = stats.favoriteProtocol
+    ? `Mostly ${stats.favoriteProtocol} · kyleplathe.com/dev/sauna`
+    : 'Try it free · kyleplathe.com/dev/sauna'
+  ctx.fillText(invite, 88 * s, 830 * s)
+
   // Footer
   const stamped = new Date().toLocaleDateString(undefined, {
     month: 'short',

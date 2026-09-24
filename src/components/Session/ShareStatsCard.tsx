@@ -11,11 +11,15 @@ import {
 
 interface ShareStatsCardProps {
   stats: SessionStats
+  temperatureUnit?: 'C' | 'F'
 }
 
 type Status = 'idle' | 'working' | 'shared' | 'saved' | 'error'
 
-export function ShareStatsCard({ stats }: ShareStatsCardProps) {
+export function ShareStatsCard({
+  stats,
+  temperatureUnit = 'C',
+}: ShareStatsCardProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [status, setStatus] = useState<Status>('idle')
 
@@ -25,7 +29,7 @@ export function ShareStatsCard({ stats }: ShareStatsCardProps) {
 
     const render = async () => {
       try {
-        const canvas = await renderShareStatsCard(stats)
+        const canvas = await renderShareStatsCard(stats, { temperatureUnit })
         const blob = await canvasToPngBlob(canvas)
         objectUrl = URL.createObjectURL(blob)
         if (!revoked) setPreviewUrl(objectUrl)
@@ -40,10 +44,10 @@ export function ShareStatsCard({ stats }: ShareStatsCardProps) {
       revoked = true
       if (objectUrl) URL.revokeObjectURL(objectUrl)
     }
-  }, [stats])
+  }, [stats, temperatureUnit])
 
   const withFreshBlob = async () => {
-    const canvas = await renderShareStatsCard(stats)
+    const canvas = await renderShareStatsCard(stats, { temperatureUnit })
     return canvasToPngBlob(canvas)
   }
 
@@ -65,7 +69,7 @@ export function ShareStatsCard({ stats }: ShareStatsCardProps) {
       const result = await shareOrDownloadPng(
         blob,
         'ember-ice-stats.png',
-        'My Ember & Ice contrast therapy progress',
+        shareCaption(stats),
       )
       setStatus(result === 'shared' ? 'shared' : 'saved')
     } catch (error) {
@@ -101,8 +105,8 @@ export function ShareStatsCard({ stats }: ShareStatsCardProps) {
           </p>
           <h3 className="font-display mt-1 text-3xl">Your practice, postcarded</h3>
           <p className="mt-1 max-w-md text-sm text-stone-400">
-            A square graphic of your current stats — save the photo or share it
-            straight to socials.
+            Cumulative sessions, streak, heat, and cold — save the photo or
+            share it straight to socials.
           </p>
         </div>
         <div className="flex gap-2">
@@ -145,4 +149,12 @@ export function ShareStatsCard({ stats }: ShareStatsCardProps) {
       </div>
     </motion.section>
   )
+}
+
+function shareCaption(stats: SessionStats): string {
+  const parts = [
+    `${stats.totalSessions} contrast sessions`,
+    stats.currentStreak > 0 ? `${stats.currentStreak}-day streak` : null,
+  ].filter(Boolean)
+  return `My Ember & Ice progress — ${parts.join(' · ')}. Heat first. Cold second.`
 }

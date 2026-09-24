@@ -30,6 +30,15 @@ export interface Session {
   totalPhases: number
   duration: number
   completed: boolean
+  /** Snapshot of protocol heat setpoint (°C) when the session was saved. */
+  avgHeatC?: number
+  /** Snapshot of protocol cold setpoint (°C) when the session was saved. */
+  avgColdC?: number
+  /** Estimated sauna seconds from completed protocol progress. */
+  heatSeconds?: number
+  /** Estimated cold seconds from completed protocol progress. */
+  coldSeconds?: number
+  roundsCompleted?: number
 }
 
 export interface SessionStats {
@@ -40,6 +49,15 @@ export interface SessionStats {
   sessionsThisWeek: number
   sessionsThisMonth: number
   lastSessionDate?: number
+  /** Mean completed-session length in seconds. */
+  averageDuration: number
+  /** Mean protocol sauna setpoint across sessions that have heat data (°C). */
+  averageHeatC?: number
+  /** Mean protocol cold setpoint across sessions that have cold data (°C). */
+  averageColdC?: number
+  totalHeatSeconds: number
+  totalColdSeconds: number
+  favoriteProtocol?: string
 }
 
 export interface AudioSettings {

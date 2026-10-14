@@ -66,7 +66,16 @@ function fillTrackedText(
 }
 
 function drawGrain(ctx: CanvasRenderingContext2D, size: number): void {
-  const image = ctx.createImageData(size, size)
+  // putImageData replaces pixels and ignores globalCompositeOperation, so
+  // painting grain on the card itself wipes the dark plate to a ~7% wash.
+  // Draw it on an offscreen canvas and composite so soft-light overlays it.
+  const grain = document.createElement('canvas')
+  grain.width = size
+  grain.height = size
+  const grainCtx = grain.getContext('2d')
+  if (!grainCtx) return
+
+  const image = grainCtx.createImageData(size, size)
   const data = image.data
   for (let i = 0; i < data.length; i += 4) {
     const n = Math.random() * 255
@@ -75,7 +84,8 @@ function drawGrain(ctx: CanvasRenderingContext2D, size: number): void {
     data[i + 2] = n
     data[i + 3] = 18
   }
-  ctx.putImageData(image, 0, 0)
+  grainCtx.putImageData(image, 0, 0)
+  ctx.drawImage(grain, 0, 0)
 }
 
 export async function renderShareStatsCard(

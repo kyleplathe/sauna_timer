@@ -1,7 +1,5 @@
-import { useState } from 'react'
 import { motion } from 'framer-motion'
 import type { AppSettings } from '../types/timer'
-import { requestLockScreenPermission } from '../utils/liveNotifications'
 
 interface SettingsProps {
   settings: AppSettings
@@ -9,18 +7,6 @@ interface SettingsProps {
 }
 
 export function Settings({ settings, onUpdate }: SettingsProps) {
-  const [notifyStatus, setNotifyStatus] = useState<NotificationPermission | 'unsupported'>(
-    () =>
-      typeof Notification === 'undefined'
-        ? 'unsupported'
-        : Notification.permission,
-  )
-
-  const allowNotifications = async () => {
-    const result = await requestLockScreenPermission()
-    setNotifyStatus(result)
-  }
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -31,6 +17,9 @@ export function Settings({ settings, onUpdate }: SettingsProps) {
 
       <section className="space-y-4 rounded-3xl bg-white p-6 shadow-sm dark:bg-stone-900">
         <h3 className="text-xl font-semibold">Audio</h3>
+        <p className="text-sm text-stone-500">
+          Beeps and the phase-end alarm mix over Spotify and Apple Music.
+        </p>
         <Toggle
           label="Alerts"
           checked={settings.audio.enabled}
@@ -38,18 +27,6 @@ export function Settings({ settings, onUpdate }: SettingsProps) {
             onUpdate({ audio: { ...settings.audio, enabled } })
           }
         />
-        <Toggle
-          label="Voice guidance"
-          checked={settings.audio.voiceGuidance}
-          disabled={!settings.audio.enabled}
-          onChange={(voiceGuidance) =>
-            onUpdate({ audio: { ...settings.audio, voiceGuidance } })
-          }
-        />
-        <p className="text-sm text-stone-500">
-          Voice often pauses Spotify/Apple Music on iPhone. Leave it off and use
-          beeps if you want music uninterrupted.
-        </p>
         <Toggle
           label="Countdown warnings"
           checked={settings.audio.warnings}
@@ -60,18 +37,6 @@ export function Settings({ settings, onUpdate }: SettingsProps) {
         />
         <p className="text-sm text-stone-500">
           Beeps at 30s and 10s, then a rising tone each second for the last 5.
-        </p>
-        <Toggle
-          label="Pause music for louder alerts"
-          checked={!!settings.audio.duckMusic}
-          disabled={!settings.audio.enabled}
-          onChange={(duckMusic) =>
-            onUpdate({ audio: { ...settings.audio, duckMusic } })
-          }
-        />
-        <p className="text-sm text-stone-500">
-          Off (recommended): alerts mix over your music. On: may pause Spotify
-          briefly so beeps are clearer.
         </p>
         <label className="block">
           <span className="mb-2 block text-sm text-stone-500">
@@ -124,43 +89,6 @@ export function Settings({ settings, onUpdate }: SettingsProps) {
             className="w-full"
           />
         </label>
-      </section>
-
-      <section className="space-y-4 rounded-3xl bg-white p-6 shadow-sm dark:bg-stone-900">
-        <h3 className="text-xl font-semibold">Screen & lock</h3>
-        <p className="text-sm text-stone-500">
-          Keep the screen awake during a session so phase-end alarms stay
-          reliable and Spotify/Apple Music keep playing. Lock-screen Live
-          Activities are not available to web apps.
-        </p>
-        <Toggle
-          label="Keep screen awake"
-          checked={!!settings.keepScreenAwake}
-          onChange={(keepScreenAwake) => onUpdate({ keepScreenAwake })}
-        />
-        <p className="text-sm text-stone-500">
-          Recommended on for sauna use. Alerts mix over your music; turn off
-          voice guidance if music still pauses.
-        </p>
-        <Toggle
-          label="Sticky lock-screen notification"
-          checked={!!settings.lockScreenLive}
-          onChange={(lockScreenLive) => onUpdate({ lockScreenLive })}
-        />
-        {notifyStatus !== 'unsupported' && (
-          <button
-            type="button"
-            onClick={() => void allowNotifications()}
-            disabled={notifyStatus === 'granted' || !settings.lockScreenLive}
-            className="w-full rounded-xl bg-stone-900 py-3 text-white disabled:opacity-50 dark:bg-stone-100 dark:text-stone-900"
-          >
-            {notifyStatus === 'granted'
-              ? 'Notifications allowed'
-              : notifyStatus === 'denied'
-                ? 'Notifications blocked — enable in system Settings'
-                : 'Allow notifications'}
-          </button>
-        )}
       </section>
 
       <section className="space-y-4 rounded-3xl bg-white p-6 shadow-sm dark:bg-stone-900">

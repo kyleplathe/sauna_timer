@@ -49,11 +49,10 @@ describe('countdown tones', () => {
     }
     vi.stubGlobal('AudioContext', FakeAudioContext)
 
-    const { announceWarning, setDuckMusicEnabled } = await import('./audio')
-    setDuckMusicEnabled(false)
+    const { announceWarning } = await import('./audio')
 
     for (const seconds of [5, 4, 3, 2, 1]) {
-      announceWarning(seconds, false, 0.8)
+      announceWarning(seconds, 0.8)
     }
 
     expect(frequencies).toEqual([480, 570, 660, 750, 840])

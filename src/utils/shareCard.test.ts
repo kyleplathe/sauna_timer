@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { formatPracticeTime, shareOrDownloadPng } from './shareCard'
+import type { SessionStats } from '../types/timer'
+import {
+  formatPracticeTime,
+  renderShareStatsCard,
+  shareOrDownloadPng,
+} from './shareCard'
 
 describe('formatPracticeTime', () => {
   it('formats seconds, minutes, and hours', () => {
@@ -61,5 +66,85 @@ describe('shareOrDownloadPng', () => {
     expect(result).toBe('downloaded')
     expect(share).not.toHaveBeenCalled()
     expect(click).toHaveBeenCalledOnce()
+  })
+})
+
+describe('renderShareStatsCard', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('composites grain over the dark plate instead of replacing it', async () => {
+    const log: string[] = []
+    let canvasIndex = 0
+
+    const createCanvas = () => {
+      const kind = canvasIndex++ === 0 ? 'card' : 'grain'
+      const gradient = { addColorStop() {} }
+      const ctx = {
+        fillStyle: '',
+        strokeStyle: '',
+        lineWidth: 1,
+        font: '',
+        textAlign: 'left' as CanvasTextAlign,
+        globalCompositeOperation: 'source-over',
+        createLinearGradient: () => gradient,
+        createRadialGradient: () => gradient,
+        fillRect() {
+          log.push(`${kind}:fillRect`)
+        },
+        beginPath() {},
+        arc() {},
+        fill() {},
+        save() {},
+        restore() {},
+        createImageData(w: number, h: number) {
+          return { data: new Uint8ClampedArray(w * h * 4) }
+        },
+        putImageData() {
+          log.push(`${kind}:putImageData`)
+        },
+        drawImage() {
+          log.push(`${kind}:drawImage:${ctx.globalCompositeOperation}`)
+        },
+        moveTo() {},
+        arcTo() {},
+        closePath() {},
+        stroke() {},
+        fillText() {},
+        measureText(text: string) {
+          return { width: text.length * 8 }
+        },
+      }
+      return {
+        width: 0,
+        height: 0,
+        getContext: () => ctx,
+      }
+    }
+
+    vi.stubGlobal('document', {
+      createElement: () => createCanvas(),
+      fonts: { ready: Promise.resolve() },
+    })
+
+    const stats: SessionStats = {
+      totalSessions: 4,
+      totalDuration: 3600,
+      currentStreak: 2,
+      longestStreak: 5,
+      sessionsThisWeek: 1,
+      sessionsThisMonth: 3,
+    }
+
+    await renderShareStatsCard(stats, { size: 16 })
+
+    expect(log).toContain('card:fillRect')
+    expect(log).toContain('grain:putImageData')
+    expect(log).toContain('card:drawImage:soft-light')
+    expect(log).not.toContain('card:putImageData')
+    expect(log.indexOf('card:fillRect')).toBeLessThan(
+      log.indexOf('card:drawImage:soft-light'),
+    )
   })
 })
